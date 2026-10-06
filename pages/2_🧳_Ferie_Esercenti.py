@@ -887,8 +887,8 @@ if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
                 print("Compass [STEP 2] Ricompongo l'indirizzo API di rete anti-filtro...")
                 s_api = "api" + "." + "github" + "." + "com"
                 
-                # 🎯 PUNTAMENTO REALE: Repository principale 'sistema-ferie'
-                url_wf_lodi = f"https://{s_api}/repos/wingamingsrl/sistema-ferie/actions/workflows/cron_scarica_locali.yml/dispatches"
+                # 🎯 PUNTAMENTO REALE: Repository principale 'AppWG'
+                url_wf_lodi = f"https://{s_api}/repos/wingamingsrl/AppWG/actions/workflows/cron_scarica_locali.yml/dispatches"
 
                 print("Compass [STEP 3] Configuro le intestazioni ed effettuo il lancio verso i server di GitHub Actions...")
                 headers_lodi = {"Authorization": f"token {t_git}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-Cloud-App"}
@@ -904,7 +904,7 @@ if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
                     stato_attesa.info("⏳ Robot Sansone avviato nel Cloud... Sto piantonando l'estrazione dell'anagrafica... Non toccare nulla.")
                     
                     time.sleep(6.0) # Pausa tecnica per dare tempo a GitHub di registrare il lancio
-                    url_runs_check = f"https://{s_api}/repos/wingamingsrl/sistema-ferie/actions/workflows/cron_scarica_locali.yml/runs?per_page=1"
+                    url_runs_check = f"https://{s_api}/repos/wingamingsrl/AppWG/actions/workflows/cron_scarica_locali.yml/runs?per_page=1"
                     
                     completato = False
                     tentativi = 0
