@@ -23,7 +23,7 @@ def spingi_file_su_github(nome_file_target):
         import base64
         if not os.path.exists(nome_file_target): return False
         s_api = "api" + "." + "github" + "." + "com"
-        url_api = f"https://{s_api}/repos/wingamingsrl/AppWG-Test/contents/{nome_file_target}"
+        url_api = f"https://{s_api}/repos/wingamingsrl/AppWG/contents/{nome_file_target}"
         
         with open(nome_file_target, "rb") as f: contenuto_binario = f.read()
         dati_base64 = base64.b64encode(contenuto_binario).decode('utf-8')
