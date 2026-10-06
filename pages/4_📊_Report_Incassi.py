@@ -46,7 +46,7 @@ st.markdown("<h3>🔄 Sincronizzazione ed Invio Report Esattori</h3>", unsafe_al
 # 📂 CONFIGURAZIONE ROTTE FILE INTERNE ALLINEATE SU APPWG-TEST
 FILE_INCASSI_GREZZO = "locali_non_incassati.xlsx"
 FILE_ELENCO_ESATTORI = "elenco_esattori.xlsx"
-repo_path = "wingamingsrl/AppWG-Test"
+repo_path = "wingamingsrl/AppWG"
 
 t_git = str(st.secrets["github"]["token_accesso_GITHUB"] if "token_accesso_GITHUB" in st.secrets["github"] else st.secrets["github"].get("token_accesso", "")).strip()
 s_api = "api" + "." + "github" + "." + "com"
