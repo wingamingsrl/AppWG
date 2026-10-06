@@ -97,7 +97,7 @@ st.markdown("<h3>🔄 Sincronizzazione Registri in Tempo Reale</h3>", unsafe_all
 # Recupero immediato del token di sicurezza dai Secrets aziendali (Chiave nativa di Manuela)
 t_git = str(st.secrets["github"]["token_accesso"]).strip()
 s_api = "api" + "." + "github" + "." + "com"
-repo_path = "wingamingsrl/AppWG-Test"
+repo_path = "wingamingsrl/AppWGt"
 workflow_file = "cron_magazzino_manuale.yml"
 
 if st.button("🚀 AVVIA ESTRAZIONE REALE DA SANSONE", key="btn_lancio_magazzino_manuale"):
