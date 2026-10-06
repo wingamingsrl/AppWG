@@ -84,8 +84,8 @@ def spingi_nuovo_excel_su_github():
     try:
         import base64
         s_api = "api" + "." + "github" + "." + "com"
-        url_api = f"https://{s_api}/repos/wingamingsrl/AppWG-Test/contents/{FILE_ANAGRAFICA_FINALE}"
-        #url_api = f"https://{s_api}/repos/wingamingsrl/sistema-ferie/contents/{FILE_ANAGRAFICA_FINALE}"
+        url_api = f"https://{s_api}/repos/wingamingsrl/AppWG/contents/{FILE_ANAGRAFICA_FINALE}"
+        
         
         with open(FILE_ANAGRAFICA_FINALE, "rb") as f: contenuto_binario = f.read()
         dati_base64 = base64.b64encode(contenuto_binario).decode('utf-8')
