@@ -200,7 +200,7 @@ def push_excel_su_github(df_da_salvare):
     try:
         t_git = str(st.secrets["github"]["token_accesso"]).strip()
         # 🛡️ ENDPOINT API PULITO: Indirizzo nativo privo di _nonce per recuperare lo SHA reale senza errori 404
-        url_git = f"https://api.github.com/repos/wingamingsrl/AppWG-Test/contents/{FILE_STORICO_PERMANENTE}"
+        url_git = f"https://api.github.com/repos/wingamingsrl/AppWG/contents/{FILE_STORICO_PERMANENTE}"
                   
         
         # Converte rigidamente il database in stringhe testuali pure per bypassare i firewall di GitHub
@@ -266,7 +266,7 @@ def esegui_sincronizzazione_robot_snai():
         # 🛡️ COSTRUZIONE STRUTTURALE PEZZO PER PEZZO: Impedisce la sovrascrittura o il troncamento della cache di Streamlit
         protocollo = "https://"
         dominio_api = "api.github.com"
-        percorso_repo = "/repos/wingamingsrl/AppWG-Test"    
+        percorso_repo = "/repos/wingamingsrl/AppWG"    
         percorso_workflow = "/actions/workflows/cron_robot_snai.yml/dispatches"
         
         # Unisce i blocchi creando la stringa estesa senza rischiare tagli
