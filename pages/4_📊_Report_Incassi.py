@@ -293,12 +293,12 @@ if file_realmente_valido and os.path.exists(FILE_INCASSI_GREZZO):
                     # 🎯 VITTORIA: Il mittente e l'indirizzo di risposta sono ufficialmente allineati alla tua mail aziendale!
                     msg['From'] = "Manuela Arigoni - WinGaming <manuela.arigoni@wingaming.it>"
                     msg['Reply-To'] = "manuela.arigoni@wingaming.it"
-                    msg['To'] = "manuela.arigoni@wingaming.it"
-                    msg['Subject'] = f"📊 [WinGaming] Registro Locali da Incassare"
+                    #msg['To'] = "manuela.arigoni@wingaming.it"
+                    msg['Subject'] = f"📊 [Wingaming] REPORT INCASSI"
                     
                     # STRUTTURA REALE PRODUCTION PRONTA PER IL FUTURO
-                    # msg['To'] = mail_dest_originale
-                    # msg['Cc'] = "manuela.arigoni@wingaming.it, alessandro.frigerio@wingaming.it"
+                     msg['To'] = mail_dest_originale
+                     msg['Cc'] = "manuela.arigoni@wingaming.it, alessandro.frigerio@wingaming.it, tatiana.vinogradova@wingaming.it"
                     
                     corpo_html = f"""<html><body>
                         <p style='font-family: Segoe UI, sans-serif; font-size: 14px;'>Buongiorno,<br><br>
@@ -307,11 +307,11 @@ if file_realmente_valido and os.path.exists(FILE_INCASSI_GREZZO):
                         <p style='font-family: Segoe UI, sans-serif; font-size: 12px; color: #64748b; margin-top:20px;'>🤖 Messaggio automatico inviato dalla Plancia WinGaming Cloud.</p></body></html>"""
                     
                     msg.attach(MIMEText(corpo_html, 'html'))
-                    server.sendmail("tecnico@wingaming.it", ["manuela.arigoni@wingaming.it"], msg.as_string())
+                    #server.sendmail("manuela.arigoni@wingaming.it", ["manuela.arigoni@wingaming.it"], msg.as_string())
                     
                     # LOGICA REALE PRODUCTION PRONTA PER IL FUTURO
-                    # tutti_ricevitori = [mail_dest_originale, "manuela.arigoni@wingaming.it", "alessandro.frigerio@wingaming.it"]
-                    # server.sendmail("tecnico@wingaming.it", tutti_ricevitori, msg.as_string())
+                    tutti_ricevitori = [mail_dest_originale, "manuela.arigoni@wingaming.it", "alessandro.frigerio@wingaming.it"]
+                    server.sendmail("manuela.arigoni@wingaming.it", tutti_ricevitori, msg.as_string())
                     
                     contatore_effettivo_inviate += 1
                 
