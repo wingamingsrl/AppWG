@@ -1,0 +1,67 @@
+name: Sveglia Automatica Gestionale
+
+on:
+  schedule:
+    # Si attiva in automatico ogni mattina dal lunedì al venerdì alle ore 07:00 italiane (05:00 UTC)
+    - cron: '0 5 * * 1-5'
+  workflow_dispatch: # Ti permette di lanciare la scossa manuale quando vuoi da GitHub
+
+jobs:
+  sveglia:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Controlla il codice
+      uses: actions/checkout@v4
+
+    - name: Configura Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Installa pacchetti di simulazione e browser virtuale
+      run: |
+        pip install requests playwright
+        playwright install chromium --with-deps
+
+    - name: Esegui sbarco e click reale anti-ibernazione
+      run: |
+        python -c "
+        import time
+        from playwright.sync_api import sync_playwright
+        
+        # 🎯 ELENCO PULITO ED ALLINEATO
+        progetti = ['appgestwg', 'sistema-ferie', 'appwg-test']
+        
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            page.set_viewport_size({'width': 1920, 'height': 1080})
+            
+            # 🎯 CORREZIONE: Ripristinata la parola italiana corretta 'progetti' per azzerare il NameError
+            for p_sub in progetti:
+                url = f'https://{p_sub}.streamlit.app/'
+                try:
+                    print(f'Compass Navigo verso {url}...')
+                    page.goto(url, wait_until='networkidle', timeout=30000)
+                    time.sleep(5)
+                    
+                    # Cerca qualsiasi variante del bottone di risveglio di Streamlit (Sia 'wake it up' che 'get this app back up')
+                    bottone_sveglia = page.locator('button:has-text(\"Yes,\")')
+                    
+                    if bottone_sveglia.count() > 0:
+                        testo_rilevato = bottone_sveglia.first.inner_text()
+                        print(f'   Warning Rilevato blocco stand-by per {p_sub} (Pulsante: \"{testo_rilevato}\")! Clicco...')
+                        bottone_sveglia.first.click()
+                        
+                        # Aspetta 15 secondi reali per dare tempo al Cloud di ricaricare i file Excel
+                        time.sleep(15)
+                        print(f'   Circle Success Pulsante premuto con successo per {p_sub}!')
+                    else:
+                        print(f'   Sparkles L\'app {p_sub} risponde regolarmente ed è attiva!')
+                        
+                except Exception as e:
+                    print(f'   Cross Error Errore durante il lancio su {p_sub}: {str(e)}')
+            
+            browser.close()
+        "

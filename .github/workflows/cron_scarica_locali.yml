@@ -1,0 +1,41 @@
+name: 🤖 [Automazione] Scarico Quotidiano Locali GamesLodi
+
+on:
+  schedule:
+    # ⏱️ 03:45 UTC corrisponde esattamente alle 05:45 del mattino in Italia!
+    - cron: '45 3 * * *'
+  workflow_dispatch:
+
+jobs:
+  run-download-gameslodi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📂 Clonazione repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurazione Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: 📦 Installazione librerie e Chrome
+        run: |
+          pip install playwright requests openpyxl pandas
+          playwright install chromium
+
+      - name: 🚀 Esecuzione Robot Scaricatore
+        env:
+          GAMESLODI_EMAIL: "manuela.arigoni@wingaming.it"
+          GAMESLODI_PASSWORD: ${{ secrets.GAMESLODI_PASSWORD }}
+          TOKEN_ACCESSO_GITHUB: ${{ secrets.TOKEN_ACCESSO_GITHUB }}
+        run: python robot_scarica_locali.py
+
+      # 📸 RACCOGLITORE DI FOTO DI MANUELA: Salva gli screenshot se il robot si incastra
+      - name: 📦 Raccogli Screenshot in caso di errore o blocco
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-gameslodi-errori
+          path: |
+            *.png
+          if-no-files-found: ignore

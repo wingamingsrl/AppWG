@@ -1,14 +1,12 @@
-name: Robot Estrazione e Invio Automatico Incassi WinGaming
+name: Robot Estrazione Incassi Manuale
 
 on:
-  schedule:
-    # 🎯 MARTEDÌ MATTINA ALLE 08:00 ITALIANE (06:00 UTC) - Minuto 10 per load balancing
-    - cron: '10 6 * * 2'
-    # 🎯 VENERDÌ POMERIGGIO ALLE 15:00 ITALIANE (13:00 UTC) - Minuto 10 per load balancing
-    - cron: '10 13 * * 5'
+  repository_dispatch:
+    types: [avvia_robot_incassi]
+  workflow_dispatch: # Telecomando puro attivabile solo a comando dallo schermo
 
 jobs:
-  run-auto-incassi:
+  run-download-incassi:
     runs-on: ubuntu-latest
     steps:
       - name: 📂 Clonazione repository
@@ -17,24 +15,26 @@ jobs:
       - name: 🐍 Configurazione Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.11" # Forza l'ambiente stabile di Python 3.11
 
       - name: 📦 Installazione librerie e Chrome binari
         run: |
           pip install playwright requests openpyxl pandas lxml
-          playwright install chromium
+          playwright install chromium # 👈 Scarica Chromium prima che parta lo script!
 
       - name: 🚀 Esecuzione Robot Incassi Isolato
         env:
           GAMESLODI_EMAIL: "manuela.arigoni@wingaming.it"
           GAMESLODI_PASSWORD: ${{ secrets.GAMESLODI_PASSWORD }}
+          # 🎯 VITTORIA: Agganciato il Secret maiuscolo ufficiale che sblocca il magazzino!
           TOKEN_ACCESSO_GITHUB: ${{ secrets.TOKEN_ACCESSO_GITHUB }}
         run: python robot_incassi.py
 
+      # 🎯 Archiviazione foto in Artifacts
       - name: 📦 Archivia gli Screenshot di Controllo Reali nelle Artifacts
-        if: always()
+        if: always() # Salva lo zip anche se il robot dovesse andare in errore
         uses: actions/upload-artifact@v4
         with:
-          name: foto-controllo-robot-incassi-auto
+          name: foto-controllo-robot-incassi
           path: /tmp/*.png
-          retention-days: 2
+          retention-days: 2 # Tiene in memoria lo zip per 48 ore senza intasare il server

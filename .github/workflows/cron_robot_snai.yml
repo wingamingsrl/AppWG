@@ -1,0 +1,41 @@
+name: Sincronizzazione Automatica Ferie Snaitech WG
+
+on:
+  workflow_dispatch:
+  schedule:
+     - cron: '0 1 * * *'
+          
+jobs:
+  run-robot-snai:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📂 Clonazione ed Estrazione Repository
+        uses: actions/checkout@v4
+        with:
+          # 🛡️ FONDAMENTALE PER GIT PUSH: Scarica il file con i permessi di riscrittura completi
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 🐍 Configurazione Ambiente Python Aziendale
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: 📦 Installazione Librerie di Rete e Playwright Nativi
+        run: |
+          pip install pandas openpyxl playwright pyotp requests
+          playwright install chromium
+
+      - name: 🚀 ESECUZIONE CORSA ROBOT AUTOMATICO SNAITECH
+        env:
+          TOKEN_GITHUB_ACTIONS: ${{ secrets.GITHUB_TOKEN }}
+        run: xvfb-run python robot_snai.py --slow-mo 500
+
+      - name: 📸 Estrazione e Download Sequenza Foto Snaitech
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schermata-errore-ufficio
+          path: "*.png"
+          retention-days: 1

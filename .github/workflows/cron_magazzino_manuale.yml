@@ -1,0 +1,28 @@
+name: 📦 [Automazione] Estrattore Giacenza Magazzino Manuale WinGaming
+
+on:
+  workflow_dispatch: # Telecomando puro attivabile solo a comando dallo schermo
+
+jobs:
+  run-download-magazzino:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📂 Clonazione repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Configurazione Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11" # Forza l'ambiente stabile di Python 3.11
+
+      - name: 📦 Installazione librerie e Chrome binari
+        run: |
+          pip install playwright requests openpyxl pandas
+          playwright install chromium # 👈 FONDAMENTALE: Scarica Chromium prima che parta lo script!
+
+      - name: 🚀 Esecuzione Robot Magazzino Isolato
+        env:
+          GAMESLODI_EMAIL: "manuela.arigoni@wingaming.it"
+          GAMESLODI_PASSWORD: ${{ secrets.GAMESLODI_PASSWORD }}
+          TOKEN_ACCESSO_GITHUB: ${{ secrets.TOKEN_ACCESSO_GITHUB }}
+        run: python robot_magazzino_manuale.py
