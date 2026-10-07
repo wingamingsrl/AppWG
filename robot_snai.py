@@ -239,8 +239,8 @@ Tel. 0341.1917908"""
 
         # 🚨 LA CHIAVE DELLA TRASPARENZA DI MANUELA: Destinatario scritto in chiaro nel codice!
         # Puoi mettere "manuela.arigoni@wingaming.it" per fare i tuoi test, oppure "customercare@ntsnetwork.it" per l'invio reale!
-        #EMAIL_DESTINATARIO_NTS = "customercare@ntsnetwork.it"
-        EMAIL_DESTINATARIO_NTS = "manuela.arigoni@wingaming.it"
+        EMAIL_DESTINATARIO_NTS = "customercare@ntsnetwork.it"
+        #EMAIL_DESTINATARIO_NTS = "manuela.arigoni@wingaming.it"
         EMAIL_COPIA_MANUELA = "manuela.arigoni@wingaming.it"
 
         msg = MIMEMultipart()
