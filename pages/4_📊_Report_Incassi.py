@@ -178,15 +178,30 @@ if os.path.exists(FILE_ELENCO_ESATTORI):
     except Exception as e_esat:
         st.error(f"Errore lettura elenco_esattori.xlsx: {str(e_esat)}")
 
-# 📊 STRUTTURA ED ELABORAZIONE DATI NATIVA
+# 📊 STRUTTURA ED ELABORAZIONE DATI NATIVA (FORZATO DA GITHUB RAW PER EVITARE IL CONGELAMENTO DELLA CACHE)
 df_pulito_globale = pd.DataFrame()
-if file_realmente_valido and os.path.exists(FILE_INCASSI_GREZZO):
+if file_realmente_valido:
     try:
-        df_grezzo = pd.read_excel(FILE_INCASSI_GREZZO, skiprows=1).fillna(0)
+        # 🎯 SBLOCCO PRODUZIONE: Invece di leggere il file locale statico, forziamo il download dell'Excel aggiornato da GitHub
+        url_raw_excel = f"https://githubusercontent.com{repo_path}/main/{FILE_INCASSI_GREZZO}"
+        headers_raw = {"Authorization": f"token {t_git}"}
+        res_raw = requests.get(url_raw_excel, headers=headers_raw, timeout=15)
+        
+        if res_raw.status_code == 200:
+            # Leggiamo il file direttamente dai byte scaricati in tempo reale dal cloud
+            df_grezzo = pd.read_excel(io.BytesIO(res_raw.content), skiprows=1).fillna(0)
+        else:
+            # Fallback locale di sicurezza se l'API di GitHub non risponde
+            df_grezzo = pd.read_excel(FILE_INCASSI_GREZZO, skiprows=1).fillna(0)
+            
         df_grezzo.columns = [str(c).strip() for c in df_grezzo.columns]
         
         df_pulito = pd.DataFrame()
         df_pulito["Nome Locale"] = df_grezzo.iloc[:, 0].astype(str)
+
+
+
+        
         df_pulito["Esattore Rif."] = df_grezzo.iloc[:, 1].astype(str).str.upper()
         df_pulito["Commerciale"] = df_grezzo.iloc[:, 2].astype(str)
         df_pulito["Giorni"] = pd.to_numeric(df_grezzo.iloc[:, 5], errors='coerce').fillna(0).astype(int)
