@@ -5,9 +5,12 @@ import requests
 import smtplib
 import streamlit as st
 import pandas as pd
+import datetime as dt_mod
 from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+
+
 
 # 🎯 SICUREZZA: Svuota la cache ad ogni rinfresco per forzare la lettura dei dati freschi da GitHub
 st.cache_data.clear()
@@ -103,6 +106,7 @@ if st.button("🚀 AVVIA ESTRAZIONE INCASSI DA SANSONE (Soglia 0 Giorni)", key="
                     if res_check.status_code == 200:
                         dati_runs = res_check.json()
                         if dati_runs.get("workflow_runs"):
+                            # 🟢 CORRETTO: Inserito l'indice [0] mancante per estrarre la riga corrente
                             run_corrente = dati_runs["workflow_runs"][0]
                             status_action = run_corrente.get("status", "").strip().lower()
                             conclusion_action = run_corrente.get("conclusion", "")
@@ -110,12 +114,10 @@ if st.button("🚀 AVVIA ESTRAZIONE INCASSI DA SANSONE (Soglia 0 Giorni)", key="
                             if status_action == "completed":
                                 completato = True
                                 if str(conclusion_action).strip().lower() == "success":
-                                    # Prima di cantare vittoria, verifichiamo che il file scaricato sia sano
                                     st.cache_data.clear()
-                                    st.success("✅ SINCRO RIUSCITA! Il robot ha scaricato i dati da Sansone e aggiornato la griglia!")
+                                    stato_attesa.success("✅ SINCRO RIUSCITA! Il robot ha scaricato i dati da Sansone e aggiornato la griglia!")
                                 else:
-                                    # ❌ SE L'ACTION È COMPLETED MA FALLITA (Es. credenziali errate o Sansone offline)
-                                    st.error("❌ ERRORE CRITICO: Il robot su GitHub è andato in errore durante il login su Sansone! Verifica gli screenshot negli Artifacts.")
+                                    stato_attesa.error("❌ ERRORE CRITICO: Il robot su GitHub è andato in errore durante il login su Sansone! Verifica gli screenshot negli Artifacts.")
                             else:
                                 secondi_trascorsi = tentativi * 5
                                 stato_attesa.info(f"⚙️ Il server cloud sta elaborando il registro incassi... (Tempo trascorso: {secondi_trascorsi}s). Aspetto che finisca l'Action...")
@@ -124,6 +126,7 @@ if st.button("🚀 AVVIA ESTRAZIONE INCASSI DA SANSONE (Soglia 0 Giorni)", key="
                         time.sleep(5.0)
                 except Exception:
                     time.sleep(5.0)
+
             
             if not completato:
                 st.warning("⏳ Il server cloud sta impiegando più tempo del previsto. Forza il rinfresco manuale tra qualche istante.")
