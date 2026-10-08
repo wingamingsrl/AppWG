@@ -183,7 +183,7 @@ df_pulito_globale = pd.DataFrame()
 if file_realmente_valido:
     try:
         # 🎯 SBLOCCO PRODUZIONE: Invece di leggere il file locale statico, forziamo il download dell'Excel aggiornato da GitHub
-        url_raw_excel = f"https://githubusercontent.com{repo_path}/main/{FILE_INCASSI_GREZZO}"
+        url_raw_excel = f"https://githubusercontent.com/{repo_path}/main/{FILE_INCASSI_GREZZO}"
         headers_raw = {"Authorization": f"token {t_git}"}
         res_raw = requests.get(url_raw_excel, headers=headers_raw, timeout=15)
         
