@@ -54,28 +54,6 @@ repo_path = "wingamingsrl/AppWG"
 t_git = str(st.secrets["github"]["token_accesso_GITHUB"] if "token_accesso_GITHUB" in st.secrets["github"] else st.secrets["github"].get("token_accesso", "")).strip()
 s_api = "api" + "." + "github" + "." + "com"
 
-# 🎯 CONTROLLO INTEGRITÀ: Il file è valido solo se esiste e pesa più di 10 KB (evita file di errore vuoti)
-#  LOGICA NUOVA: Chiede l'orario direttamente a GitHub Actions
-data_ora_aggiornamento = "Data non disponibile"
-file_realmente_valido = False
-
-if os.path.exists(FILE_INCASSI_GREZZO) and os.path.getsize(FILE_INCASSI_GREZZO) > 10000:
-    file_realmente_valido = True
-    try:
-        url_runs = f"https://{s_api}/repos/{repo_path}/actions/workflows/{workflow_file}/runs?status=success&per_page=1"
-        headers_runs = {"Authorization": f"token {t_git}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-Cloud-App"}
-        res_runs = requests.get(url_runs, headers=headers_runs, timeout=5)
-        if res_runs.status_code == 200:
-            dati_runs_time = res_runs.json()
-            if dati_runs_time.get("workflow_runs"):
-                conclusa_at = dati_runs_time["workflow_runs"][0]["updated_at"]
-                dt_utc = datetime.strptime(conclusa_at, "%Y-%m-%dT%H:%M:%SZ")
-                dt_locale = dt_utc + dt_mod.timedelta(hours=2)
-                data_ora_aggiornamento = dt_locale.strftime("%d/%m/%Y alle ore %H:%M:%S")
-    except Exception:
-        data_ora_aggiornamento = datetime.fromtimestamp(os.path.getmtime(FILE_INCASSI_GREZZO)).strftime("%d/%m/%Y alle ore %H:%M:%S")
-
-
 
 
 # 🚀 TELECOMANDO CON RADAR PROGRESSIVO E BLINDATURA SUI FALLIMENTI DI RETE
@@ -138,7 +116,43 @@ if st.button("🚀 AVVIA ESTRAZIONE INCASSI DA SANSONE (Soglia 0 Giorni)", key="
     except Exception as e_click:
         st.error(f"💥 Errore di rete interno alla plancia: {str(e_click)}")
 
-st.markdown("---")
+
+
+# 🎯 CONTROLLO INTEGRITÀ: Il file è valido solo se esiste e pesa più di 10 KB (evita file di errore vuoti)
+#  LOGICA NUOVA: Chiede l'orario direttamente a GitHub Actions
+data_ora_aggiornamento = "Data non disponibile"
+
+
+file_realmente_valido = False
+if os.path.exists(FILE_INCASSI_GREZZO) and os.path.getsize(FILE_INCASSI_GREZZO) > 10000:
+    file_realmente_valido = True
+
+
+# Se il file supera il controllo di peso, interroga le API di GitHub per mostrare la data di completamento reale
+if file_realmente_valido:
+    try:
+        s_api = "api" + "." + "github" + "." + "com"
+        url_runs = f"https://{s_api}/repos/{repo_path}/actions/workflows/{workflow_file}/runs?status=success&per_page=1"
+        headers_runs = {"Authorization": f"token {t_git}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-Cloud-App"}
+        res_runs = requests.get(url_runs, headers=headers_runs, timeout=5)
+        if res_runs.status_code == 200:
+            dati_runs = res_runs.json()
+            if dati_runs.get("workflow_runs"):
+                conclusa_at = dati_runs["workflow_runs"][0]["updated_at"]
+                dt_utc = datetime.strptime(conclusa_at, "%Y-%m-%dT%H:%M:%SZ")
+                import datetime as dt_mod
+                dt_locale = dt_utc + dt_mod.timedelta(hours=2)
+                data_ora_aggiornamento = dt_locale.strftime("%d/%m/%Y alle ore %H:%M:%S")
+    except Exception:
+        # Paracadute: se le API di GitHub fossero temporaneamente offline, legge la data fisica del file locale
+        data_ora_aggiornamento = datetime.fromtimestamp(os.path.getmtime(FILE_INCASSI_GREZZO)).strftime("%d/%m/%Y alle ore %H:%M:%S")
+
+
+
+
+
+
+#st.markdown("---")
 
 # 📊 IL BADGE INTELLIGENTE: Mostra l'orario reale solo se l'ultimo file è realmente valido e pesante
 if file_realmente_valido:
