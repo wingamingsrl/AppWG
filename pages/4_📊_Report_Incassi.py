@@ -51,13 +51,35 @@ repo_path = "wingamingsrl/AppWG"
 t_git = str(st.secrets["github"]["token_accesso_GITHUB"] if "token_accesso_GITHUB" in st.secrets["github"] else st.secrets["github"].get("token_accesso", "")).strip()
 s_api = "api" + "." + "github" + "." + "com"
 
-# 🎯 CONTROLLO INTEGRITÀ: Il file è valido solo se esiste e pesa più di 10 KB (evita file di errore vuoti)
-data_ora_aggiornamento = datetime.now().strftime("%d/%m/%Y alle ore %H:%M:%S")
+#  LOGICA NUOVA: Chiede l'orario direttamente a GitHub Actions
+data_ora_aggiornamento = "Data non disponibile"
 file_realmente_valido = False
 
 if os.path.exists(FILE_INCASSI_GREZZO) and os.path.getsize(FILE_INCASSI_GREZZO) > 10000:
-    data_ora_aggiornamento = datetime.fromtimestamp(os.path.getmtime(FILE_INCASSI_GREZZO)).strftime("%d/%m/%Y alle ore %H:%M:%S")
     file_realmente_valido = True
+    try:
+        # Interroghiamo GitHub per sapere quando è terminata l'ultima Action con successo
+        url_check_time = f"https://{s_api}/repos/{repo_path}/actions/workflows/cron_incassi_manuale.yml/runs?status=success&per_page=1"
+        headers_time = {"Authorization": f"token {t_git}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-Cloud-App"}
+        res_time = requests.get(url_check_time, headers=headers_time, timeout=5)
+        
+        if res_time.status_code == 200:
+            dati_time = res_time.json()
+            if dati_time.get("workflow_runs"):
+                # Estraiamo la data di conclusione (es: 2026-10-08T09:30:00Z)
+                updated_at_git = dati_time["workflow_runs"][0].get("updated_at")
+                if updated_at_git:
+                    # Convertiamo la stringa ISO di GitHub in un oggetto datetime gestibile
+                    dt_obj = datetime.strptime(updated_at_git, "%Y-%m-%dT%H:%M:%SZ")
+                    # Formattiamo la data allineandola allo stile Manuela
+                    data_ora_aggiornamento = dt_obj.strftime("%d/%m/%Y alle ore %H:%M:%S (Cloud)")
+        else:
+            # Fallback sul tempo di sistema locale se le API di GitHub non rispondono
+            data_ora_aggiornamento = datetime.fromtimestamp(os.path.getmtime(FILE_INCASSI_GREZZO)).strftime("%d/%m/%Y alle ore %H:%M:%S")
+    except Exception:
+        # Fallback di sicurezza in caso di crash di rete temporaneo
+        data_ora_aggiornamento = datetime.fromtimestamp(os.path.getmtime(FILE_INCASSI_GREZZO)).strftime("%d/%m/%Y alle ore %H:%M:%S")
+
 
 # 🚀 TELECOMANDO CON RADAR PROGRESSIVO E BLINDATURA SUI FALLIMENTI DI RETE
 if st.button("🚀 AVVIA ESTRAZIONE INCASSI DA SANSONE (Soglia 0 Giorni)", key="btn_lancio_incassi_manuale"):
