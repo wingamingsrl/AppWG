@@ -167,23 +167,22 @@ if os.path.exists(FILE_GIACENZA_SCHEDE) and os.path.getsize(FILE_GIACENZA_SCHEDE
 data_ora_aggiornamento = datetime.now().strftime("%d/%m/%Y alle ore %H:%M:%S")
 
 # Se il file supera il controllo di peso, interroga le API di GitHub per mostrare la data di completamento reale
+# 🟢 NUOVO SISTEMA ORARIO ALLINEATO AL MAGAZZINO (CON FUSO ORARIO +2)
 if file_realmente_valido:
     try:
-        s_api = "api" + "." + "github" + "." + "com"
         url_runs = f"https://{s_api}/repos/{repo_path}/actions/workflows/{workflow_file}/runs?status=success&per_page=1"
         headers_runs = {"Authorization": f"token {t_git}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-Cloud-App"}
         res_runs = requests.get(url_runs, headers=headers_runs, timeout=5)
         if res_runs.status_code == 200:
-            dati_runs = res_runs.json()
-            if dati_runs.get("workflow_runs"):
-                conclusa_at = dati_runs["workflow_runs"][0]["updated_at"]
+            dati_runs_time = res_runs.json()
+            if dati_runs_time.get("workflow_runs"):
+                conclusa_at = dati_runs_time["workflow_runs"][0]["updated_at"]
                 dt_utc = datetime.strptime(conclusa_at, "%Y-%m-%dT%H:%M:%SZ")
-                import datetime as dt_mod
                 dt_locale = dt_utc + dt_mod.timedelta(hours=2)
                 data_ora_aggiornamento = dt_locale.strftime("%d/%m/%Y alle ore %H:%M:%S")
     except Exception:
-        # Paracadute: se le API di GitHub fossero temporaneamente offline, legge la data fisica del file locale
-        data_ora_aggiornamento = datetime.fromtimestamp(os.path.getmtime(FILE_GIACENZA_SCHEDE)).strftime("%d/%m/%Y alle ore %H:%M:%S")
+        data_ora_aggiornamento = datetime.fromtimestamp(os.path.getmtime(FILE_INCASSI_GREZZO)).strftime("%d/%m/%Y alle ore %H:%M:%S")
+
 
 # Visualizzazione del badge temporale protetto
 if file_realmente_valido:
