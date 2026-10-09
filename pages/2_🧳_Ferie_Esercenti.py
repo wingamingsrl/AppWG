@@ -313,33 +313,54 @@ def esegui_sincronizzazione_robot_snai():
 
 
 # =====================================================================================
-# BLOCCO 3: ACCESSO UTENTI CON INTERCETTAZIONE E MENU FILTRATO
+# BLOCCO 3: ACCESSO UTENTI CON SIDEBAR DINAMICA INTEGRATA ED UNIFICATA
 # =====================================================================================
 if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
 
+# ⏱️ Controllo token di rientro automatico in query params (Anti-F5)
 if "token_sessione" in st.query_params:
     token_salvato = str(st.query_params["token_sessione"]).strip()
     if "_" in token_salvato:
         try:
-            email_t = token_salvato.split("_").strip().lower()
+            email_t = token_salvato.split("_")[0].strip().lower()
             ut = df_tecnici[df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == email_t]
             if not ut.empty:
                 st.session_state.autenticato = True
                 st.session_state.user_email = email_t
-                st.session_state.user_nome = str(ut["NOME"].values).replace("[","").replace("]","").replace("'","").strip()
-                st.session_state.user_ruolo = str(ut["RUOLO"].values).strip().upper()
+                # 🎯 PULIZIA RIGIDA: Estrae la stringa pura dal database senza parentesi quadre o apici
+                st.session_state.user_nome = str(ut.iloc[0]["NOME"]).strip().upper()
+                st.session_state.user_ruolo = str(ut.iloc[0]["RUOLO"]).strip().upper()
         except Exception: pass
 
+# 🔒 TELEPASS DI SICUREZZA AUTOMATICO: Se manca la sessione rimanda in Home
 if not st.session_state.autenticato:
     st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
-    st.warning("🔒 Sessione protetta. Effettua l'autenticazione dalla Home principale.")
-    if st.button("⬅️ ACCEDI AL PORTALE"):
-        st.switch_page("1_🏠_Home.py")
+    st.markdown("<h1>🛡️ ACCESSO AREA UTENTI</h1>", unsafe_allow_html=True)
+    col_sx, col_centro, col_dx = st.columns([1, 1.2, 1])
+    with col_centro:
+        with st.form(key="modulo_login_home_definitivo_f5_timer"):
+            st.write("🔒 Autenticazione Richiesta")
+            input_email = st.text_input("Nome Utente (E-mail):").strip().lower()
+            input_password = st.text_input("Password di Sicurezza:", type="password").strip()
+            if st.form_submit_button("🚀 ACCEDI AL PORTALE"):
+                utente_trovato = df_tecnici[(df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == input_email) & (df_tecnici["PASSWORD"].astype(str).str.strip() == input_password)]
+                if not utente_trovato.empty:
+                    # 🎯 PULIZIA RIGIDA IN FASE DI LOGIN
+                    st.session_state.user_nome = str(utente_trovato.iloc[0]["NOME"]).strip().upper()
+                    st.session_state.user_email = str(utente_trovato.iloc[0]["EMAIL"]).strip().lower()
+                    st.session_state.user_ruolo = str(utente_trovato.iloc[0]["RUOLO"]).strip().upper()
+                    st.session_state.autenticato = True
+                    st.session_state.ora_creazione_sessione = time.time()
+                    st.query_params["token_sessione"] = f"{st.session_state.user_email}_attivo"
+                    st.rerun()
+                else:
+                    st.error("❌ Credenziali errate. Riprova.")
     st.stop()
 
-esecutore_nome = st.session_state.get("user_nome", "UFFICIO")
-esecutore_email = st.session_state.get("user_email", "manuela.arigoni@wingaming.it")
+# Recupero variabili post-login pulite ed estese in maiuscolo per i filtri di tabella
+esecutore_nome = str(st.session_state.get("user_nome", "UFFICIO")).strip().upper()
+esecutore_email = str(st.session_state.get("user_email", "manuela.arigoni@wingaming.it")).strip().lower()
 ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
 
 # 🎯 DISEGNO DELLA SIDEBAR GENERATA MATEMATICAMENTE (STILE HOME / MAGAZZINO SENZA DUPLICATI)
