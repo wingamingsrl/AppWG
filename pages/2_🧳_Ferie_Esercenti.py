@@ -45,17 +45,18 @@ st.markdown("""
 
 st.markdown("""
     <style>
-    /* Nasconde i menù di servizio di Streamlit */
+    /* Nasconde i menù di servizio standard di Streamlit */
     #MainMenu, footer, .stDecoration, [data-testid="stFooter"] { visibility: hidden !important; display: none !important; }
     .stStatusWidget, [data-testid="stStatusWidget"], [data-testid="viewerToolbar"], [data-testid="stStatusWidgetContainer"], .stActionButton, [data-testid="stActionButton"] { display: none !important; visibility: hidden !important; height: 0px !important; width: 0px !important; opacity: 0 !important; }
     
-    /* 🎯 RIMPICCIOILIMENTO TITOLI PRINCIPALI (DA 28px A 22px CENTRATI) */
-    h1 { color: #115e59 !important; font-size: 22px !important; text-align: center !important; font-weight: 800 !important; margin-bottom: 15px; }
+    /* 🎯 LA SVOLTA: Nasconde l'elenco automatico dei file di Streamlit per evitare il doppio menù */
+    [data-testid="stSidebarNav"] { display: none !important; }
     
-    /* 🎯 RIMPICCIOILIMENTO SOTTOTITOLI DEI TABELLONI E DELLE SCADENZE (FORZATO A 16px) */
+    h1 { color: #115e59 !important; font-size: 22px !important; text-align: center !important; font-weight: 800 !important; margin-bottom: 15px; }
     h3, .stMarkdown h3 { color: #1e293b !important; font-size: 16px !important; font-weight: 700 !important; margin-top: 15px !important; margin-bottom: 10px !important; }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 # =====================================================================================
@@ -307,7 +308,7 @@ def esegui_sincronizzazione_robot_snai():
 
 
 # =====================================================================================
-# BLOCCO 3: ACCESSO UTENTI CON SIDEBAR DINAMICA FILTRATA IN BASE AL RUOLO
+# BLOCCO 3: ACCESSO UTENTI CON SIDEBAR DINAMICA UNICA E PULITA
 # =====================================================================================
 if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
@@ -326,7 +327,7 @@ if "token_sessione" in st.query_params:
                 st.session_state.user_ruolo = str(ut["RUOLO"].values[0]).strip().upper()
         except Exception: pass
 
-# 🎯 DISEGNO SIDEBAR DINAMICA AGGIORNATA PER I TECNICI
+# 🎯 DISEGNO DELLA SIDEBAR UNICA E PERSONALIZZATA
 if st.session_state.autenticato:
     ruolo_attuale_attivo = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
     nome_utente_connesso = str(st.session_state.get("user_nome", "TECNICO")).strip()
@@ -336,18 +337,20 @@ if st.session_state.autenticato:
         st.markdown(f"Ruolo: **{ruolo_attuale_attivo}**")
         st.markdown("---")
         
-        # 👑 SE L'UTENTE È ADMIN/UFFICIO: Vede tutte le pagine principali
+        # 👑 SE L'UTENTE È ADMIN/UFFICIO: Vede il menù completo aziendale ordinato (senza doppioni)
         if ruolo_attuale_attivo in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
             st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
             st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
-            st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
+            st.page_link("pages/3_📦_Giacenza_Magazzino.py", label="Giacenza Magazzino", icon="📦")
+            st.page_link("pages/4_📊_Report_Incassi.py", label="Report Incassi", icon="📊")
+            st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Gestione Assegni", icon="🎫")
         else:
-            # 📱 SE L'UTENTE È UN TECNICO STANDARD: Vede le Ferie e la Scansione Assegni!
+            # 📱 SE L'UTENTE È UN TECNICO STANDARD: Vede solo ed esclusivamente le sue due plance abilitate
             st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
             st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
             
         st.markdown("---")
-        # Pulsante di disconnessione fisso per tutti
+        # Pulsante unico di disconnessione visibile a tutti in fondo al menù
         if st.button("🚪 DISCONNETTI ACCESSO", key="btn_disconnetti_sessione_tecnici", use_container_width=True):
             st.session_state.clear()
             st.query_params.clear()
@@ -389,6 +392,7 @@ ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip
 
 st.markdown("<h1>🧳 PORTALE FERIE ESERCENTI</h1>", unsafe_allow_html=True)
 st.markdown(f"<div style='text-align: center; font-size: 13px; color: #64748b; margin-bottom: 20px;'>👤 Utente: {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
+
 
 
 
