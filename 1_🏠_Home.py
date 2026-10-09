@@ -98,10 +98,7 @@ ruolo_utente = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper(
 
 # 🎯 CONFIGURAZIONE SIDEBAR DINAMICA INTEGRATA ED UNIFICATA
 with st.sidebar:
-    st.markdown(f"### 👤 {esecutore_nome}")
-    st.markdown(f"Ruolo: **{ruolo_utente}**")
-    st.markdown("---")
-    
+  
     if ruolo_utente in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
         # Vista Amministratore Ufficio Completa
         st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
