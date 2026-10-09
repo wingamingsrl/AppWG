@@ -699,66 +699,63 @@ except Exception: pass
 # BLOCCO 8: TABELLONE VISIVO: PRIVILEGI ADMIN / TECNICI (VISTA IN ATTESA)
 # =====================================================================================
 st.markdown("---")
-ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
-utente_tab_check = str(st.session_state.get("user_nome", "UFFICIO")).strip().upper()
+# 🎯 RECUPERO DIRETTO DEI DATI DI SESSIONE GIÀ IN MEMORIA
+ruolo_loggato = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
+nome_loggato = str(st.session_state.get("user_nome", "UFFICIO")).strip().upper()
 
-if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+# Leggiamo l'Excel reale direttamente dal disco per essere sicuri al 100% di avere i dati freschi
+if os.path.exists(FILE_STORICO_PERMANENTE):
+    df_excel_reale = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("")
+    # Standardizziamo i nomi delle colonne in maiuscolo per evitare errori di battitura
+    df_excel_reale.columns = [str(c).strip().upper() for c in df_excel_reale.columns]
+else:
+    df_excel_reale = pd.DataFrame(columns=COLONNE_REALI_UFFICIO)
+
+# Isoliamo le righe in fase di lavorazione (Nuova, Modifica, Elimina)
+if ruolo_loggato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
     st.markdown("### 📊 [VISTA ADMIN] Tutte le chiusure della flotta in attesa")
-    righe_lavorazione_generiche = [
-        row for row in st.session_state.get("storico_cloud", []) 
-        if str(row.get("ROBOT_ACTION", "")).strip().upper() in ["NUOVA", "MODIFICA", "ELIMINA"]
-    ]
+    df_lavorazione = df_excel_reale[df_excel_reale["ROBOT_ACTION"].str.upper().isin(["NUOVA", "MODIFICA", "ELIMINA"])]
 else:
     st.markdown("### 📊 Le tue chiusure in attesa di allineamento")
-    # 🎯 FILTRO SECCO PER RUOLO: Il tecnico vede solo le sue pratiche basandosi sul suo nome utente
-    righe_lavorazione_generiche = [
-        row for row in st.session_state.get("storico_cloud", []) 
-        if str(row.get("ROBOT_ACTION", "")).strip().upper() in ["NUOVA", "MODIFICA", "ELIMINA"]
-        and str(row.get("TECNICO_INSERIMENTO", "")).strip().upper() == utente_tab_check
+    # 🎯 CONTROLLO DIRETTO SUL TECNICO LOGGATO: Filtra l'Excel usando il nome in memoria RAM
+    df_lavorazione = df_excel_reale[
+        (df_excel_reale["ROBOT_ACTION"].str.upper().isin(["NUOVA", "MODIFICA", "ELIMINA"])) & 
+        (df_excel_reale["TECNICO_INSERIMENTO"].str.upper().str.strip() == nome_loggato)
     ]
 
-if righe_lavorazione_generiche:
-    df_lavorazione = pd.DataFrame(righe_lavorazione_generiche)
-    if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+if not df_lavorazione.empty:
+    if ruolo_loggato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
         colonne_visibili = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION", "TECNICO_INSERIMENTO"]
     else:
         colonne_visibili = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION"]
-    df_visibile_pulito = df_lavorazione.reindex(columns=colonne_visibili).fillna("")
-    st.dataframe(df_visibile_pulito, hide_index=True, use_container_width=True)
+    st.dataframe(df_lavorazione.reindex(columns=colonne_visibili).fillna(""), hide_index=True, use_container_width=True)
 else:
-    st.success(f"✅ Nessuna pratica in coda per la tua visualizzazione, {utente_tab_check}!")
+    st.success(f"✅ Nessuna pratica in coda per la tua visualizzazione, {nome_loggato}!")
 
 # =====================================================================================
 # BLOCCO 9: TABELLONE GIRI LOGISTICI: PRIVILEGI GERARCHICI TOTALI (STORICO INCLUSO)
 # =====================================================================================
 st.markdown("---")
-righe_giri_logistici = []
 
-if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+if ruolo_loggato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
     st.markdown("### 📊 [VISTA ADMIN] Tutti i Promemoria Giri Logistici della Flotta")
-    righe_giri_logistici = st.session_state.get("storico_cloud", []) if st.session_state.get("storico_cloud", []) else []
+    df_giri = df_excel_reale.copy()
 else:
     st.markdown("### 📊 I tuoi Promemoria Giri Logistici Registrati")
-    # 🎯 FILTRO SECCO PER RUOLO: Mostra lo storico abbinando la colonna reale Excel
-    if st.session_state.get("storico_cloud", []):
-        righe_giri_logistici = [
-            row for row in st.session_state.get("storico_cloud", []) 
-            if str(row.get("TECNICO_INSERIMENTO", "")).strip().upper() == utente_tab_check
-        ]
+    # 🎯 CONTROLLO DIRETTO SUL TECNICO LOGGATO: Mostra lo storico abbinando il nome in RAM
+    df_giri = df_excel_reale[df_excel_reale["TECNICO_INSERIMENTO"].str.upper().str.strip() == nome_loggato]
 
-if righe_giri_logistici:
-    df_lavorazione_giri = pd.DataFrame(righe_giri_logistici)
-    if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+if not df_giri.empty:
+    if ruolo_loggato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
         colonne_visibili_giri = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION", "TECNICO_INSERIMENTO"]
     else:
         colonne_visibili_giri = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION"]
-    df_visibile_giri_pulito = df_lavorazione_giri.reindex(columns=colonne_visibili_giri).fillna("")
-    st.dataframe(df_visibile_giri_pulito, hide_index=True, use_container_width=True)
+    st.dataframe(df_giri.reindex(columns=colonne_visibly_giri).fillna(""), hide_index=True, use_container_width=True)
 else:
-    st.success(f"✅ Nessun promemoria giro logistico registrato a sistema, {utente_tab_check}.")
+    st.success(f"✅ Nessun promemoria giro logistico registrato a sistema, {nome_loggato}.")
 
 # =====================================================================================
-# BLOCCO 10: PANNELLO CANCELLAZIONE - AUTO-CANCELLAZIONE RIGHE NON PROCESDATE
+# BLOCCO 10: PANNELLO CANCELLAZIONE - PROFILATO SUL TECNICO LOGGATO
 # =====================================================================================
 st.markdown("---")
 st.markdown("### 🗑️ Cancella un Periodo Registrato")
@@ -766,12 +763,12 @@ st.markdown("### 🗑️ Cancella un Periodo Registrato")
 opzioni_cancellazione = ["- Seleziona la riga da eliminare -"]
 mappa_indici_reali = {}
 
-if "storico_cloud" in st.session_state and st.session_state.storico_cloud:
-    for idx, row in enumerate(st.session_state.storico_cloud):
+if not df_excel_reale.empty:
+    for idx, row in df_excel_reale.iterrows():
         azione_corrente = str(row.get("ROBOT_ACTION", "")).strip().upper()
-        # 🎯 FILTRO CANCELLAZIONE PROFILATO PER RUOLO
-        appartiene_a_utente = str(row.get("TECNICO_INSERIMENTO", "")).strip().upper() == utente_tab_check
-        e_direzione = ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]
+        # 🎯 FILTRO CANCELLAZIONE BASATO SULLA MEMORIA RAM DEL TECNICO LOGGATO
+        appartiene_a_utente = str(row.get("TECNICO_INSERIMENTO", "")).strip().upper() == nome_loggato
+        e_direzione = ruolo_loggato in ["ADMIN", "SUPERVISORE", "UFFICIO"]
         
         if azione_corrente != "ELIMINA" and (appartiene_a_utente or e_direzione):
             testo_opzione = f"ID {idx} | {row.get('CODICE_LOCALE', '')} - {row.get('NOME_LOCALE', '')} [{row.get('CONCESSIONARIO','')}] (Dal {row.get('INIZIO_FERIE', '')})"
@@ -783,33 +780,29 @@ selezione_delete = st.selectbox("Scegli la chiusura da eliminare dal database:",
 if selezione_delete != "- Seleziona la riga da eliminare -" and selezione_delete in mappa_indici_reali:
     try:
         idx_selezionato = mappa_indici_reali[selezione_delete]
-        riga_scelta = st.session_state.storico_cloud[idx_selezionato]
-        codice_locale_target = str(riga_scelta.get("CODICE_LOCALE", "")).strip()
-        nome_locale_target = str(riga_scelta.get("NOME_LOCALE", "")).strip()
-        azione_attuale_riga = str(riga_scelta.get("ROBOT_ACTION", "")).strip().upper()
-            
+        
         if st.button("❌ ELIMINA DEFINITIVAMENTE QUESTA CHIUSURA"):
+            # Rileggiamo l'Excel per fare la modifica direttamente sul file fisico
+            df_modifica = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("")
+            azione_attuale_riga = str(df_modifica.at[idx_selezionato, "ROBOT_ACTION"]).strip().upper()
+            nome_locale_target = str(df_modifica.at[idx_selezionato, "NOME_LOCALE"]).strip()
+            
             if azione_attuale_riga in ["NUOVA", "MODIFICA"]:
-                st.session_state.storico_cloud = [
-                    r for r in st.session_state.storico_cloud 
-                    if str(r.get("CODICE_LOCALE", "")).strip() != codice_locale_target
-                ]
+                df_modifica = df_modifica.drop(idx_selezionato).reset_index(drop=True)
                 st.success(f"🧹 Pulizia istantanea eseguita.")
             else:
-                for riga_cloud in st.session_state.storico_cloud:
-                    if str(riga_cloud.get("CODICE_LOCALE", "")).strip() == codice_locale_target:
-                        riga_cloud["ROBOT_ACTION"] = "ELIMINA"
+                df_modifica.at[idx_selezionato, "ROBOT_ACTION"] = "ELIMINA"
                 st.success(f"🗑️ Richiesta di eliminazione caricata per: {nome_locale_target}!")
             
-            df_nuovo_salva = pd.DataFrame(st.session_state.storico_cloud)
-            df_nuovo_salva.to_excel(FILE_STORICO_PERMANENTE, index=False)
-            try: push_excel_su_github(df_nuovo_salva)
+            df_modifica.to_excel(FILE_STORICO_PERMANENTE, index=False)
+            try: push_excel_su_github(df_modifica)
             except Exception: pass
                 
-            time.sleep(2.0)
+            time.sleep(1.5)
             st.rerun()
     except Exception as e_del: 
         st.error(f"❌ Errore durante la rimozione: {str(e_del)}")
+
 
 # =====================================================================================
 # AREA AMMINISTRATORE: UPLOADER EXCEL (VERSIONE INTEGRALE CONVERTITRICE)
