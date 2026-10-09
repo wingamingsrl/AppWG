@@ -312,12 +312,12 @@ def esegui_sincronizzazione_robot_snai():
 
 
 # =====================================================================================
-# BLOCCO 3: VERIFICA UTENTE E ALLINEAMENTO ALLA BARRA LATERALE STANDARD AZIENDALE
+# BLOCCO 3: ACCESSO UTENTI CON MEMORIZZAZIONE SESSIONE FISSA (VALIDITÀ 2 ORE)
 # =====================================================================================
 if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
 
-# Controllo token di rientro automatico in query params (Anti-F5)
+# 🛡️ TELEPASS AUTOMATICO: Rigenerazione token anti-F5
 if "token_sessione" in st.query_params:
     token_salvato = str(st.query_params["token_sessione"]).strip()
     if "_" in token_salvato:
@@ -329,30 +329,27 @@ if "token_sessione" in st.query_params:
                 st.session_state.user_email = email_t
                 st.session_state.user_nome = str(ut["NOME"].values[0]).replace("[","").replace("]","").replace("'","").strip()
                 st.session_state.user_ruolo = str(ut["RUOLO"].values[0]).strip().upper()
-        except Exception: pass
+        except Exception:
+            pass
 
-# 🛡️ TELEPASS DI SICUREZZA AUTOMATICO: Se salta la sessione rimanda in Home per il Login
+# 🔒 CONTROL SANITARIO: Se salta l'autenticazione rimanda alla Home di login principale
 if not st.session_state.autenticato:
     st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
-    st.warning("🔒 Accesso protetto. Effettua l'autenticazione dal pannello Home principale.")
-    if st.button("⬅️ TORNA ALLA PAGINA DI ACCESSO"):
+    st.warning("🔒 Sessione protetta. Effettua l'autenticazione dalla Home principale.")
+    if st.button("⬅️ ACCEDI AL PORTALE"):
         st.switch_page("1_🏠_Home.py")
     st.stop()
 
-# Recupero variabili post-login stabili per i blocchi successivi
+# Recupero variabili post-login pulite per i blocchi successivi
 esecutore_nome = st.session_state.get("user_nome", "UFFICIO")
 esecutore_email = st.session_state.get("user_email", "manuela.arigoni@wingaming.it")
 ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
 
-# 🛡️ SCUDO PRIVACY DI MANUELA: Nasconde fisicamente l'intera barra laterale se a navigare è un tecnico standard
-# (Esattamente come faceva il tuo codice originale, senza aggiungere bottoni manuali)
-if ruolo_utente_connesso not in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
-    st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
+# 🎯 SBLOCCO BARRA LATERALE: Cancellata la regola "display: none" per i tecnici.
+# La Sidebar e l'elenco dei pulsanti nativi ora rimangono visibili a CHIUNQUE, esattamente come accade nell'Hub Magazzino.
 
-# Titolo della plancia puro e visibile
 st.markdown("<h1>🧳 PORTALE FERIE ESERCENTI</h1>", unsafe_allow_html=True)
 st.markdown(f"<div class='user-badge'>👤 {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
-
 
 
 
