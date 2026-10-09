@@ -47,17 +47,24 @@ st.markdown("""
 
 st.markdown("""
     <style>
-    #MainMenu, footer, .stDecoration, [data-testid="stFooter"] { visibility: hidden !important; display: none !important; }
-    .stStatusWidget, [data-testid="stStatusWidget"], [data-testid="viewerToolbar"], [data-testid="stStatusWidgetContainer"], .stActionButton, [data-testid="stActionButton"] { display: none !important; visibility: hidden !important; height: 0px !important; width: 0px !important; opacity: 0 !important; }
-    
-    /* 🎯 PIALLATURA DEL MENU AUTOMATICO DI STREAMLIT PER EVITARE IL DOPPIO MENU A SX */
+    /* 🎯 ANNIENTAMENTO TOTALIZZANTE DEL DOPPIO MENU DI STREAMLIT (UGUALE AL MAGAZZINO) */
     [data-testid="stSidebarNav"] { display: none !important; }
+    
+    #MainMenu, footer, .stDecoration, [data-testid="stFooter"] { visibility: hidden !important; display: none !important; }
+    .stApp { background-color: #f8fafc !important; color: #1e293b !important; font-family: 'Segoe UI', sans-serif !important; }
     
     h1 { color: #115e59 !important; font-size: 22px !important; text-align: center !important; font-weight: 800 !important; margin-bottom: 15px; }
     h3, .stMarkdown h3 { color: #1e293b !important; font-size: 16px !important; font-weight: 700 !important; margin-top: 15px !important; margin-bottom: 10px !important; }
-    .user-badge { background-color: #ffffff; padding: 10px; border-radius: 8px; border: 2px solid #115e59; margin-bottom: 20px; text-align: center; color: #115e59 !important; font-weight: 400; font-size: 14px; }
+    
+    /* Bottoni contabili puliti stile Magazzino */
+    .stButton > button { 
+        background-color: #f8fafc !important; color: #334155 !important; border: 1px solid #e2e8f0 !important; 
+        font-weight: 400 !important; font-size: 13px !important; width: 100% !important; border-radius: 8px !important; height: 36px !important; 
+    }
+    .stButton > button:hover { background-color: #f1f5f9 !important; border-color: #cbd5e1 !important; color: #0f172a !important; }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
@@ -311,11 +318,12 @@ def esegui_sincronizzazione_robot_snai():
 
 
 # =====================================================================================
-# BLOCCO 3: ACCESSO UTENTI CON SIDEBAR DINAMICA INTEGRATA ED UNIFICATA
+# BLOCCO 3: VERIFICA UTENTE E ALLINEAMENTO ALLA BARRA LATERALE STANDARD AZIENDALE
 # =====================================================================================
 if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
 
+# Controllo token di rientro automatico in query params (Anti-F5)
 if "token_sessione" in st.query_params:
     token_salvato = str(st.query_params["token_sessione"]).strip()
     if "_" in token_salvato:
@@ -329,7 +337,7 @@ if "token_sessione" in st.query_params:
                 st.session_state.user_ruolo = str(ut["RUOLO"].values[0]).strip().upper()
         except Exception: pass
 
-# 🛡️ TELEPASS DI SICUREZZA AUTOMATICO: Se salta la sessione rimanda i tecnici in Home
+# 🛡️ TELEPASS DI SICUREZZA AUTOMATICO: Se salta la sessione rimanda in Home per il Login
 if not st.session_state.autenticato:
     st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
     st.warning("🔒 Accesso protetto. Effettua l'autenticazione dal pannello Home principale.")
@@ -337,39 +345,20 @@ if not st.session_state.autenticato:
         st.switch_page("1_🏠_Home.py")
     st.stop()
 
+# Recupero variabili post-login stabili per i blocchi successivi
 esecutore_nome = st.session_state.get("user_nome", "UFFICIO")
 esecutore_email = st.session_state.get("user_email", "manuela.arigoni@wingaming.it")
 ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
 
-# 🎯 DISEGNO DELLA SIDEBAR UNICA FILTRATA (Rimosso lo stile display:none per i tecnici)
-with st.sidebar:
-    st.markdown(f"### 👤 {esecutore_nome}")
-    st.markdown(f"Ruolo: **{ruolo_utente_connesso}**")
-    st.markdown("---")
-    
-    if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
-        # Vista Ufficio Completa
-        st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
-        st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
-        st.page_link("pages/3_📦_Giacenza_Magazzino.py", label="Giacenza Magazzino", icon="📦")
-        st.page_link("pages/4_📊_Report_Incassi.py", label="Report Incassi", icon="📊")
-        st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Gestione Assegni", icon="🎫")
-    else:
-        # 📱 Vista Tecnici Territorio: Solo le 3 voci pulite coordinate
-        st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
-        st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
-        st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
-        
-    st.markdown("---")
-    if st.button("🚪 DISCONNETTI ACCESSO", key="btn_logout_ferie_eserc", use_container_width=True):
-        st.session_state.clear()
-        st.query_params.clear()
-        st.toast("Disconnessione effettuata!")
-        time.sleep(0.5)
-        st.rerun()
+# 🛡️ SCUDO PRIVACY DI MANUELA: Nasconde fisicamente l'intera barra laterale se a navigare è un tecnico standard
+# (Esattamente come faceva il tuo codice originale, senza aggiungere bottoni manuali)
+if ruolo_utente_connesso not in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+    st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
 
+# Titolo della plancia puro e visibile
 st.markdown("<h1>🧳 PORTALE FERIE ESERCENTI</h1>", unsafe_allow_html=True)
 st.markdown(f"<div class='user-badge'>👤 {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
+
 
 
 
