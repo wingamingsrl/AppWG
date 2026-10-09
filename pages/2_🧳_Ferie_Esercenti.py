@@ -346,16 +346,18 @@ ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip
 with st.sidebar:
     if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
         # Menù completo per la Direzione
-        st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
+        st.page_link("1_🏠_Home.py", label="Home", icon="🏠")
         st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
         st.page_link("pages/3_📦_Giacenza_Magazzino.py", label="Giacenza Magazzino", icon="📦")
         st.page_link("pages/4_📊_Report_Incassi.py", label="Report Incassi", icon="📊")
         st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Gestione Assegni", icon="🎫")
+        st.page_link("pages/9_🚪_Disconnetti.py", label="Logout", icon="🚪")
     else:
         # Menù ridotto per i Tecnici sul territorio (Vede solo i 3 abilitati)
-        st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
+        st.page_link("1_🏠_Home.py", label="Home", icon="🏠")
         st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
         st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
+        st.page_link("pages/9_🚪_Disconnetti.py", label="Logout", icon="🚪")
 
 st.markdown("<h1>🧳 PORTALE FERIE ESERCENTI</h1>", unsafe_allow_html=True)
 st.markdown(f"<div class='user-badge'>👤 {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
