@@ -326,12 +326,12 @@ if file_realmente_valido and os.path.exists(FILE_INCASSI_GREZZO):
                     # 🎯 VITTORIA: Il mittente e l'indirizzo di risposta sono ufficialmente allineati alla tua mail aziendale!
                     msg['From'] = "Manuela Arigoni - WinGaming <manuela.arigoni@wingaming.it>"
                     msg['Reply-To'] = "manuela.arigoni@wingaming.it"
-                    msg['To'] = "manuela.arigoni@wingaming.it"
+                    #msg['To'] = "manuela.arigoni@wingaming.it"
                     msg['Subject'] = f"📊 [WinGaming] Registro Locali da Incassare"
                     
                     # STRUTTURA REALE PRODUCTION PRONTA PER IL FUTURO
-                    # msg['To'] = mail_dest_originale
-                    # msg['Cc'] = "manuela.arigoni@wingaming.it, alessandro.frigerio@wingaming.it"
+                    msg['To'] = mail_dest_originale
+                    msg['Cc'] = "manuela.arigoni@wingaming.it, alessandro.frigerio@wingaming.it, tatiana.vinogradova@wingaming.it"
                     
                     corpo_html = f"""<html><body>
                         <p style='font-family: Segoe UI, sans-serif; font-size: 14px;'>Buongiorno,<br><br>
