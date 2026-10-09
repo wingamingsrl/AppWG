@@ -300,12 +300,12 @@ def esegui_sincronizzazione_robot_snai():
 
 
 # =====================================================================================
-# BLOCCO 3: ACCESSO UTENTI CON SIDEBAR DINAMICA INTEGRATA ED UNIFICATA
+# BLOCCO 3: ACCESSO UTENTI CON LETTURA EXCEL UNIVERSALE (SBLOCCO TOTALE TECNICI)
 # =====================================================================================
 if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
 
-# ⏱️ Controllo token di rientro automatico in query params (Anti-F5)
+# 🛡️ TELEPASS AUTOMATICO DELLO SMARTPHONE: Rigenerazione token anti-F5
 if "token_sessione" in st.query_params:
     token_salvato = str(st.query_params["token_sessione"]).strip()
     if "_" in token_salvato:
@@ -315,12 +315,16 @@ if "token_sessione" in st.query_params:
             if not ut.empty:
                 st.session_state.autenticato = True
                 st.session_state.user_email = email_t
-                # 🎯 PULIZIA RIGIDA: Estrae la stringa pura dal database senza parentesi quadre o apici
                 st.session_state.user_nome = str(ut.iloc[0]["NOME"]).strip().upper()
                 st.session_state.user_ruolo = str(ut.iloc[0]["RUOLO"]).strip().upper()
+                
+                # 🎯 LA SVOLTA: Forza il caricamento dell'Excel anche quando il tecnico rientra col Token automatico!
+                if os.path.exists(FILE_STORICO_PERMANENTE):
+                    df_s_token = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("")
+                    st.session_state.storico_cloud = df_s_token.to_dict('records')
         except Exception: pass
 
-# 🔒 TELEPASS DI SICUREZZA AUTOMATICO: Se manca la sessione rimanda in Home
+# 🔒 SCHERMATA LOGIN CENTRATA COMPATTA (Solo se non si è autenticati)
 if not st.session_state.autenticato:
     st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
     st.markdown("<h1>🛡️ ACCESSO AREA UTENTI</h1>", unsafe_allow_html=True)
@@ -333,13 +337,20 @@ if not st.session_state.autenticato:
             if st.form_submit_button("🚀 ACCEDI AL PORTALE"):
                 utente_trovato = df_tecnici[(df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == input_email) & (df_tecnici["PASSWORD"].astype(str).str.strip() == input_password)]
                 if not utente_trovato.empty:
-                    # 🎯 PULIZIA RIGIDA IN FASE DI LOGIN
                     st.session_state.user_nome = str(utente_trovato.iloc[0]["NOME"]).strip().upper()
                     st.session_state.user_email = str(utente_trovato.iloc[0]["EMAIL"]).strip().lower()
                     st.session_state.user_ruolo = str(utente_trovato.iloc[0]["RUOLO"]).strip().upper()
                     st.session_state.autenticato = True
                     st.session_state.ora_creazione_sessione = time.time()
                     st.query_params["token_sessione"] = f"{st.session_state.user_email}_attivo"
+                    
+                    # Caricamento forzato al login manuale
+                    if os.path.exists(FILE_STORICO_PERMANENTE):
+                        df_s_login = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("")
+                        st.session_state.storico_cloud = df_s_login.to_dict('records')
+                    
+                    st.success(f"🔓 Benvenuto {st.session_state.user_nome}!")
+                    time.sleep(0.8)
                     st.rerun()
                 else:
                     st.error("❌ Credenziali errate. Riprova.")
