@@ -47,23 +47,17 @@ st.markdown("""
 
 st.markdown("""
     <style>
-    /* 🎯 ANNIENTAMENTO TOTALIZZANTE DEL DOPPIO MENU DI STREAMLIT (UGUALE AL MAGAZZINO) */
-    [data-testid="stSidebarNav"] { display: none !important; }
-    
     #MainMenu, footer, .stDecoration, [data-testid="stFooter"] { visibility: hidden !important; display: none !important; }
-    .stApp { background-color: #f8fafc !important; color: #1e293b !important; font-family: 'Segoe UI', sans-serif !important; }
+    .stStatusWidget, [data-testid="stStatusWidget"], [data-testid="viewerToolbar"], [data-testid="stStatusWidgetContainer"], .stActionButton, [data-testid="stActionButton"] { display: none !important; visibility: hidden !important; height: 0px !important; width: 0px !important; opacity: 0 !important; }
+    
+    /* 🎯 RIPRISTINO: Rimosso il display:none sul SidebarNav per far riaccendere i bottoni automatici erediti dalle altre pagine */
     
     h1 { color: #115e59 !important; font-size: 22px !important; text-align: center !important; font-weight: 800 !important; margin-bottom: 15px; }
     h3, .stMarkdown h3 { color: #1e293b !important; font-size: 16px !important; font-weight: 700 !important; margin-top: 15px !important; margin-bottom: 10px !important; }
-    
-    /* Bottoni contabili puliti stile Magazzino */
-    .stButton > button { 
-        background-color: #f8fafc !important; color: #334155 !important; border: 1px solid #e2e8f0 !important; 
-        font-weight: 400 !important; font-size: 13px !important; width: 100% !important; border-radius: 8px !important; height: 36px !important; 
-    }
-    .stButton > button:hover { background-color: #f1f5f9 !important; border-color: #cbd5e1 !important; color: #0f172a !important; }
+    .user-badge { background-color: #ffffff; padding: 10px; border-radius: 8px; border: 2px solid #115e59; margin-bottom: 20px; text-align: center; color: #115e59 !important; font-weight: 400; font-size: 14px; }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
