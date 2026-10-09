@@ -50,7 +50,8 @@ st.markdown("""
     #MainMenu, footer, .stDecoration, [data-testid="stFooter"] { visibility: hidden !important; display: none !important; }
     .stStatusWidget, [data-testid="stStatusWidget"], [data-testid="viewerToolbar"], [data-testid="stStatusWidgetContainer"], .stActionButton, [data-testid="stActionButton"] { display: none !important; visibility: hidden !important; height: 0px !important; width: 0px !important; opacity: 0 !important; }
     
-    /* 🎯 RIPRISTINO: Rimosso il display:none sul SidebarNav per far riaccendere i bottoni automatici erediti dalle altre pagine */
+    /* 🎯 LA CHIAVE: Nasconde l'elenco dei file automatici di Streamlit per non far vedere tutti i menu ai tecnici */
+    [data-testid="stSidebarNav"] { display: none !important; }
     
     h1 { color: #115e59 !important; font-size: 22px !important; text-align: center !important; font-weight: 800 !important; margin-bottom: 15px; }
     h3, .stMarkdown h3 { color: #1e293b !important; font-size: 16px !important; font-weight: 700 !important; margin-top: 15px !important; margin-bottom: 10px !important; }
@@ -312,27 +313,24 @@ def esegui_sincronizzazione_robot_snai():
 
 
 # =====================================================================================
-# BLOCCO 3: ACCESSO UTENTI CON MEMORIZZAZIONE SESSIONE FISSA (VALIDITÀ 2 ORE)
+# BLOCCO 3: ACCESSO UTENTI CON INTERCETTAZIONE E MENU FILTRATO
 # =====================================================================================
 if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
 
-# 🛡️ TELEPASS AUTOMATICO: Rigenerazione token anti-F5
 if "token_sessione" in st.query_params:
     token_salvato = str(st.query_params["token_sessione"]).strip()
     if "_" in token_salvato:
         try:
-            email_t = token_salvato.split("_")[0].strip().lower()
+            email_t = token_salvato.split("_").strip().lower()
             ut = df_tecnici[df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == email_t]
             if not ut.empty:
                 st.session_state.autenticato = True
                 st.session_state.user_email = email_t
-                st.session_state.user_nome = str(ut["NOME"].values[0]).replace("[","").replace("]","").replace("'","").strip()
-                st.session_state.user_ruolo = str(ut["RUOLO"].values[0]).strip().upper()
-        except Exception:
-            pass
+                st.session_state.user_nome = str(ut["NOME"].values).replace("[","").replace("]","").replace("'","").strip()
+                st.session_state.user_ruolo = str(ut["RUOLO"].values).strip().upper()
+        except Exception: pass
 
-# 🔒 CONTROL SANITARIO: Se salta l'autenticazione rimanda alla Home di login principale
 if not st.session_state.autenticato:
     st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
     st.warning("🔒 Sessione protetta. Effettua l'autenticazione dalla Home principale.")
@@ -340,18 +338,27 @@ if not st.session_state.autenticato:
         st.switch_page("1_🏠_Home.py")
     st.stop()
 
-# Recupero variabili post-login pulite per i blocchi successivi
 esecutore_nome = st.session_state.get("user_nome", "UFFICIO")
 esecutore_email = st.session_state.get("user_email", "manuela.arigoni@wingaming.it")
 ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
 
-# 🎯 SBLOCCO BARRA LATERALE: Cancellata la regola "display: none" per i tecnici.
-# La Sidebar e l'elenco dei pulsanti nativi ora rimangono visibili a CHIUNQUE, esattamente come accade nell'Hub Magazzino.
+# 🎯 DISEGNO DELLA SIDEBAR GENERATA MATEMATICAMENTE (STILE HOME / MAGAZZINO SENZA DUPLICATI)
+with st.sidebar:
+    if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+        # Menù completo per la Direzione
+        st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
+        st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
+        st.page_link("pages/3_📦_Giacenza_Magazzino.py", label="Giacenza Magazzino", icon="📦")
+        st.page_link("pages/4_📊_Report_Incassi.py", label="Report Incassi", icon="📊")
+        st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Gestione Assegni", icon="🎫")
+    else:
+        # Menù ridotto per i Tecnici sul territorio (Vede solo i 3 abilitati)
+        st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
+        st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
+        st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
 
 st.markdown("<h1>🧳 PORTALE FERIE ESERCENTI</h1>", unsafe_allow_html=True)
 st.markdown(f"<div class='user-badge'>👤 {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
-
-
 
 
 
