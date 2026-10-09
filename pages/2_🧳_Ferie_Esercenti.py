@@ -18,24 +18,26 @@ from datetime import datetime, timedelta, time as dtime
 
 icona_app = "logo.png" if os.path.exists("logo.png") else "📅"
 
-st.set_page_config(page_title="Ferie Esercenti", page_icon="🧳", layout="wide")
+st.set_page_config(page_title="Ferie Esercenti - WinGaming", page_icon="🧳", layout="wide", initial_sidebar_state="expanded")
+
+FILE_LOCALI = "elenco_locali.xlsx"
+FILE_TECNICI = "elenco_tecnici.xlsx"
+FILE_STORICO_PERMANENTE = "storico_ferie.xlsx"
+
+EMAIL_MITTENTE_GMAIL = "wingamingsrl@gmail.com"
+EMAIL_MANUELA_RICEVENTE = "manuela.arigoni@wingaming.it"
+COLONNE_REALI_UFFICIO = ["DATA_INSERIMENTO", "TECNICO_INSERIMENTO", "CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "PROMEMORIA_IN_COPIA", "STATO_INVIO", "ROBOT_ACTION"]
 
 # =====================================================================================
 # 🛡️ BLOCCO DI RETE DI MANUELA: DISATTIVA I BOTTONI DI TUTTI I TECNICI SE IL ROBOT GIRA
 # =====================================================================================
 robot_sta_girando_ora = False
 try:
-    # Rilegge il file fisico presente sul server di GitHub per verificare i processi
     df_lock_rete = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("")
-    
-    # Condizione di sicurezza: Se nel cloud ci sono righe con lo STATO_INVIO impostato dal robot 
-    # o se la sincronizzazione forzata visiva è attiva sulla rete, blocca tutti i telefoni!
     if not df_lock_rete.empty and any(str(row.get("STATO_INVIO", "")).strip() == "In elaborazione" for _, row in df_lock_rete.iterrows()):
         robot_sta_girando_ora = True
 except Exception:
     pass
-# =====================================================================================
-
 
 st.markdown("""
     <link rel="apple-touch-icon" sizes="180x190" href="logo.png">
@@ -45,17 +47,18 @@ st.markdown("""
 
 st.markdown("""
     <style>
-    /* Nasconde i menù di servizio standard di Streamlit */
     #MainMenu, footer, .stDecoration, [data-testid="stFooter"] { visibility: hidden !important; display: none !important; }
     .stStatusWidget, [data-testid="stStatusWidget"], [data-testid="viewerToolbar"], [data-testid="stStatusWidgetContainer"], .stActionButton, [data-testid="stActionButton"] { display: none !important; visibility: hidden !important; height: 0px !important; width: 0px !important; opacity: 0 !important; }
     
-    /* 🎯 LA SVOLTA: Nasconde l'elenco automatico dei file di Streamlit per evitare il doppio menù */
+    /* 🎯 PIALLATURA DEL MENU AUTOMATICO DI STREAMLIT PER EVITARE IL DOPPIO MENU A SX */
     [data-testid="stSidebarNav"] { display: none !important; }
     
     h1 { color: #115e59 !important; font-size: 22px !important; text-align: center !important; font-weight: 800 !important; margin-bottom: 15px; }
     h3, .stMarkdown h3 { color: #1e293b !important; font-size: 16px !important; font-weight: 700 !important; margin-top: 15px !important; margin-bottom: 10px !important; }
+    .user-badge { background-color: #ffffff; padding: 10px; border-radius: 8px; border: 2px solid #115e59; margin-bottom: 20px; text-align: center; color: #115e59 !important; font-weight: 400; font-size: 14px; }
     </style>
 """, unsafe_allow_html=True)
+
 
 
 
@@ -308,90 +311,66 @@ def esegui_sincronizzazione_robot_snai():
 
 
 # =====================================================================================
-# BLOCCO 3: ACCESSO UTENTI CON SIDEBAR DINAMICA UNICA E PULITA
+# BLOCCO 3: ACCESSO UTENTI CON SIDEBAR DINAMICA INTEGRATA ED UNIFICATA
 # =====================================================================================
 if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
 
-# Controllo token di rientro automatico in query params
 if "token_sessione" in st.query_params:
     token_salvato = str(st.query_params["token_sessione"]).strip()
     if "_" in token_salvato:
         try:
             email_t = token_salvato.split("_")[0].strip().lower()
-            st.session_state.autenticato = True
-            st.session_state.user_email = email_t
             ut = df_tecnici[df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == email_t]
             if not ut.empty:
-                st.session_state.user_nome = str(ut["NOME"].values[0]).strip()
+                st.session_state.autenticato = True
+                st.session_state.user_email = email_t
+                st.session_state.user_nome = str(ut["NOME"].values[0]).replace("[","").replace("]","").replace("'","").strip()
                 st.session_state.user_ruolo = str(ut["RUOLO"].values[0]).strip().upper()
         except Exception: pass
 
-# 🎯 DISEGNO DELLA SIDEBAR UNICA E PERSONALIZZATA
-if st.session_state.autenticato:
-    ruolo_attuale_attivo = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
-    nome_utente_connesso = str(st.session_state.get("user_nome", "TECNICO")).strip()
-    
-    with st.sidebar:
-        #st.markdown(f"### 👤 {nome_utente_connesso}")
-        #st.markdown(f"Ruolo: **{ruolo_attuale_attivo}**")
-        #st.markdown("---")
-        
-        # 👑 SE L'UTENTE È ADMIN/UFFICIO: Vede il menù completo aziendale ordinato (senza doppioni)
-        if ruolo_attuale_attivo in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
-            st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
-            st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
-            st.page_link("pages/3_📦_Giacenza_Magazzino.py", label="Giacenza Magazzino", icon="📦")
-            st.page_link("pages/4_📊_Report_Incassi.py", label="Report Incassi", icon="📊")
-            st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Gestione Assegni", icon="🎫")
-        else:
-            # 📱 SE L'UTENTE È UN TECNICO STANDARD: Vede solo ed esclusivamente le sue due plance abilitate
-            st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
-            st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
-            
-        st.markdown("---")
-        # Pulsante unico di disconnessione visibile a tutti in fondo al menù
-        if st.button("🚪 DISCONNETTI ACCESSO", key="btn_disconnetti_sessione_tecnici", use_container_width=True):
-            st.session_state.clear()
-            st.query_params.clear()
-            st.toast("Disconnessione effettuata!")
-            time.sleep(0.5)
-            st.rerun()
-
-# Se l'utente non è autenticato, mostra il form di login nascondendo la sidebar
+# 🛡️ TELEPASS DI SICUREZZA AUTOMATICO: Se salta la sessione rimanda i tecnici in Home
 if not st.session_state.autenticato:
     st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
-    st.markdown("<h1>🛡️ ACCESSO AREA TECNICI</h1>", unsafe_allow_html=True)
-    
-    col_sx, col_centro, col_dx = st.columns([1, 1.2, 1])
-    with col_centro:
-        with st.container(border=True):
-            st.write("🔒 Autenticazione Richiesta")
-            input_email = st.text_input("Nome Utente (E-mail):").strip().lower()
-            input_password = st.text_input("Password di Sicurezza:", type="password").strip()
-            
-            if st.button("🚀 ACCEDI AL PORTALE"):
-                utente_trovato = df_tecnici[(df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == input_email) & (df_tecnici["PASSWORD"].astype(str).str.strip() == input_password)]
-                if not utente_trovato.empty:
-                    st.session_state.user_nome = str(utente_trovato.iloc[0]["NOME"]).strip()
-                    st.session_state.user_email = str(utente_trovato.iloc[0]["EMAIL"]).strip()
-                    st.session_state.user_ruolo = str(utente_trovato.iloc[0]["RUOLO"]).strip().upper()
-                    st.session_state.autenticato = True
-                    st.query_params["token_sessione"] = f"{st.session_state.user_email}_attivo"
-                    
-                    st.success(f"🔓 Benvenuto {st.session_state.user_nome}!")
-                    time.sleep(0.8)
-                    st.rerun()
-                else:
-                    st.error("❌ Credenziali errate. Riprova.")
+    st.warning("🔒 Accesso protetto. Effettua l'autenticazione dal pannello Home principale.")
+    if st.button("⬅️ TORNA ALLA PAGINA DI ACCESSO"):
+        st.switch_page("1_🏠_Home.py")
     st.stop()
 
 esecutore_nome = st.session_state.get("user_nome", "UFFICIO")
 esecutore_email = st.session_state.get("user_email", "manuela.arigoni@wingaming.it")
 ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
 
+# 🎯 DISEGNO DELLA SIDEBAR UNICA FILTRATA (Rimosso lo stile display:none per i tecnici)
+with st.sidebar:
+    st.markdown(f"### 👤 {esecutore_nome}")
+    st.markdown(f"Ruolo: **{ruolo_utente_connesso}**")
+    st.markdown("---")
+    
+    if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+        # Vista Ufficio Completa
+        st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
+        st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
+        st.page_link("pages/3_📦_Giacenza_Magazzino.py", label="Giacenza Magazzino", icon="📦")
+        st.page_link("pages/4_📊_Report_Incassi.py", label="Report Incassi", icon="📊")
+        st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Gestione Assegni", icon="🎫")
+    else:
+        # 📱 Vista Tecnici Territorio: Solo le 3 voci pulite coordinate
+        st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
+        st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
+        st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
+        
+    st.markdown("---")
+    if st.button("🚪 DISCONNETTI ACCESSO", key="btn_logout_ferie_eserc", use_container_width=True):
+        st.session_state.clear()
+        st.query_params.clear()
+        st.toast("Disconnessione effettuata!")
+        time.sleep(0.5)
+        st.rerun()
+
 st.markdown("<h1>🧳 PORTALE FERIE ESERCENTI</h1>", unsafe_allow_html=True)
-st.markdown(f"<div style='text-align: center; font-size: 13px; color: #64748b; margin-bottom: 20px;'>👤 Utente: {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
+st.markdown(f"<div class='user-badge'>👤 {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
+
 
 
 
