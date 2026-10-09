@@ -114,7 +114,7 @@ with st.sidebar:
         st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
         st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
         st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
-       st.page_link("pages/9_🚪_Disconnetti.py", label="Gestione Assegni", icon="🚪")
+        st.page_link("pages/9_🚪_Disconnetti.py", label="Gestione Assegni", icon="🚪")
        
 # 🤍 INTERFACCIA DI BENVENUTO IN BASE AL PRIVILEGIO DI RUOLO
 st.markdown("<h1>🏠 WinGaming Home</h1>", unsafe_allow_html=True)
