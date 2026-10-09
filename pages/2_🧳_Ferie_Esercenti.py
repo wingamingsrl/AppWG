@@ -66,7 +66,7 @@ st.markdown("""
 
 # =====================================================================================
 # BLOCCO 2: COLLEGAMENTO FILE EXCEL PERMANENTI E PARSAMENTO REALE CONTRACCOSMICO
-# VERSIONE DI PRODUZIONE 100% EXCEL NATIVO — BLINDATURA CANCELLAZIONI E MODIFICHE REALI
+# VERSIONE DI PRODUZIONE 100% EXCEL NATIVO — ANTICANCELLAZIONE AND PROTEZIONE DATA 2026
 # =====================================================================================
 FILE_LOCALI = "elenco_locali.xlsx"
 FILE_TECNICI = "elenco_tecnici.xlsx"
@@ -77,14 +77,12 @@ EMAIL_MANUELA_RICEVENTE = "manuela.arigoni@wingaming.it"
 
 COLONNE_REALI_UFFICIO = ["DATA_INSERIMENTO", "TECNICO_INSERIMENTO", "CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "PROMEMORIA_IN_COPIA", "STATO_INVIO", "ROBOT_ACTION"]
 
-
 # =====================================================================================
 # 🛡️ PROTEZIONE DI SICUREZZA DI MANUELA: TIMEOUT CON RESET TOTALE ANTI-LOOP LOGOUT
 # =====================================================================================
 import time as t_lib
 
 # ⏱️ CONFIGURAZIONE UFFICIALE: 7200 secondi corrispondono a 2 ore esatte di autonomia.
-# (Mantieni 60 per il tuo test di 1 minuto, poi rimetterai 7200 per i tecnici dell'ufficio!)
 SECONDI_MASSIMI_SESSIONE = 7200
 
 if "ora_creazione_sessione" not in st.session_state:
@@ -100,8 +98,7 @@ if "user_nome" in st.session_state and st.session_state.user_nome:
         st.session_state.clear()
         st.session_state.autenticato = False
         
-        # 🔑 CHIAVE DI VOLTA DI MANUELA: Aggiorna IMMEDIATAMENTE l'ora di creazione al momento del crash,
-        # così al prossimo login il contatore ripartirà da zero senza mostrare doppi messaggi di errore!
+        # 🔑 CHIAVE DI VOLTA DI MANUELA: Aggiorna IMMEDIATAMENTE l'ora di creazione al momento del crash
         st.session_state.ora_creazione_sessione = t_lib.time()
         
         # Mostra l'avviso di sicurezza ed esegue il reset pulito della pagina
@@ -113,14 +110,10 @@ if "user_nome" in st.session_state and st.session_state.user_nome:
 # =====================================================================================
 
 
-
-
 def scarica_file_da_github_se_esiste(nome_file):
     try:
         t_git = str(st.secrets["github"]["token_accesso"]).strip()
-        # Genera un marcatore di millisecondi per costringere GitHub a ignorare la cache vecchia
         c_time = str(int(time.time() * 1000))
-        
         indirizzo_base = "https://github.com"
         url_git = indirizzo_base + "/" + str(nome_file) + "?_nonce=" + c_time
         
@@ -149,57 +142,51 @@ def carica_database_locale():
         df_s = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("") if os.path.exists(FILE_STORICO_PERMANENTE) else pd.DataFrame(columns=COLONNE_REALI_UFFICIO)
             
     df_s = df_s.reindex(columns=COLONNE_REALI_UFFICIO).fillna("")
-    return df_l, df_t, df_s
     
-    # 🧹 MOTORE AUTOMATICO GIORNALIERO (REPLICA ESATTA DEL TASTO ELIMINA MANUALE)
-    # Si attiva in automatico solo se l'utente è loggato e la memoria cloud è pronta
+    # 🧹 MOTORE AUTOMATICO GIORNALIERO RISANATO CON FILTRO TOLLERANTE ANTI-RESET
     if "user_nome" in st.session_state and "storico_cloud" in st.session_state:
         oggi_ora = datetime.now()
         indici_da_eliminare = []
         
-        # Scansiona lo storico cloud individuando la posizione esatta (ID) dei locali con ferie passate rispetto a oggi (Settembre 2026)
         for idx, row in enumerate(st.session_state.storico_cloud):
             testo_fine = str(row.get("FINE_FERIE", "")).strip()
-            if testo_fine:
+            if testo_fine and testo_fine != "nan":
                 try:
-                    data_fine_valida = datetime.strptime(testo_fine, "%d-%m-%Y %H:%M")
-                    if data_fine_valida < oggi_ora:
+                    testo_fine_pulito = testo_fine.split()[0] if " " in testo_fine else testo_fine
+                    if "-" in testo_fine_pulito:
+                        data_fine_valida = datetime.strptime(testo_fine_pulito, "%Y-%m-%d").date()
+                    else:
+                        data_fine_valida = datetime.strptime(testo_fine_pulito, "%d-%m-%Y").date()
+                        
+                    # Cancella il record solo se è scaduto da più di 48 ore (Evita reset simultanei)
+                    if data_fine_valida < (oggi_ora.date() - timedelta(days=2)):
                         indici_da_eliminare.append(idx)
                 except Exception:
-                    try:
-                        data_fine_valida = datetime.strptime(testo_fine, "%d-%m-%Y")
-                        if data_fine_valida.date() < oggi_ora.date():
-                            indici_da_eliminare.append(idx)
-                    except Exception: pass
+                    pass
         
-        # 🛡️ SE CI SONO SCADENZE: Esegue la rimozione col .pop() identica al comando manuale
         if indici_da_eliminare:
-            st.session_state.congelamento_sincro_attivo = True  # Blocca temporaneamente la RAM
-            
-            # Rimuove i record partendo dall'ultimo per non sfasare gli indici della lista
+            st.session_state.congelamento_sincro_attivo = True
             for idx in sorted(indici_da_eliminare, reverse=True):
-                st.session_state.storico_cloud.pop(idx)
+                try: st.session_state.storico_cloud.pop(idx)
+                except Exception: pass
                 
-            # Rigenera il database aggiornato dall'elenco rimasto
             df_nuovo_salva = pd.DataFrame(st.session_state.storico_cloud)
-            
-            # Forza la stesura su disco e la spinta cloud con la sequenza collaudata
             df_nuovo_salva.to_excel(FILE_STORICO_PERMANENTE, index=False)
             push_excel_su_github(df_nuovo_salva)
-            
-            st.session_state.congelamento_sincro_attivo = False  # Sblocca la RAM
-            st.toast("🧹 Pulizia automatica: Rimossi i locali che hanno terminato le ferie!")
+            st.session_state.congelamento_sincro_attivo = False
+            st.toast("🧹 Pulizia programmata: archiviate le chiusure concluse.")
             time.sleep(0.5)
             st.rerun()
             
     return df_l, df_t, df_s
 
-    
 df_locali, df_tecnici, df_storico_file = carica_database_locale()
 
-# 🛡️ AUTOMAZIONE DI MANUELA: Forza l'app a leggere l'Excel reale aggiornato dal robot, distruggendo la cache vecchia
-df_aggiornato_reale = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("") if os.path.exists(FILE_STORICO_PERMANENTE) else df_storico_file
-st.session_state.storico_cloud = df_aggiornato_reale.to_dict('records')
+# 🛡️ AUTOMAZIONE DI MANUELA: Forza l'allineamento dei record RAM caricandoli direttamente dal database
+if "storico_cloud" not in st.session_state or not st.session_state.storico_cloud:
+    df_aggiornato_reale = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("") if os.path.exists(FILE_STORICO_PERMANENTE) else df_storico_file
+    st.session_state.storico_cloud = df_aggiornato_reale.to_dict('records')
+
 
 
 def push_excel_su_github(df_da_salvare):
