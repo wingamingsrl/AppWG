@@ -326,7 +326,7 @@ if "token_sessione" in st.query_params:
                 st.session_state.user_ruolo = str(ut["RUOLO"].values[0]).strip().upper()
         except Exception: pass
 
-# 🎯 DISEGNO SIDEBAR DINAMICA: Attiva per tutti dopo il login (Rimosso display: none)
+# 🎯 DISEGNO SIDEBAR DINAMICA AGGIORNATA PER I TECNICI
 if st.session_state.autenticato:
     ruolo_attuale_attivo = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
     nome_utente_connesso = str(st.session_state.get("user_nome", "TECNICO")).strip()
@@ -336,18 +336,18 @@ if st.session_state.autenticato:
         st.markdown(f"Ruolo: **{ruolo_attuale_attivo}**")
         st.markdown("---")
         
-        # 👑 SE L'UTENTE È ADMIN/UFFICIO: Vede tutte le pagine della plancia aziendale
+        # 👑 SE L'UTENTE È ADMIN/UFFICIO: Vede tutte le pagine principali
         if ruolo_attuale_attivo in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
             st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
-            st.page_link("pages/2_💵_Gestione_Contanti.py", label="Gestione Contanti", icon="💵")
-            st.page_link("pages/3_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
-            st.page_link("pages/4_📅_Ferie_Esercenti.py", label="Ferie Esercenti", icon="📅")
+            st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
+            st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
         else:
-            # 📱 SE L'UTENTE È UN TECNICO STANDARD: Vede solo ed esclusivamente le sue pagine abilitate
-            st.page_link("pages/4_📅_Ferie_Esercenti.py", label="Ferie Esercenti", icon="📅")
+            # 📱 SE L'UTENTE È UN TECNICO STANDARD: Vede le Ferie e la Scansione Assegni!
+            st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
+            st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
             
         st.markdown("---")
-        # Pulsante strutturale di disconnessione visibile a tutti
+        # Pulsante di disconnessione fisso per tutti
         if st.button("🚪 DISCONNETTI ACCESSO", key="btn_disconnetti_sessione_tecnici", use_container_width=True):
             st.session_state.clear()
             st.query_params.clear()
@@ -389,6 +389,7 @@ ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip
 
 st.markdown("<h1>🧳 PORTALE FERIE ESERCENTI</h1>", unsafe_allow_html=True)
 st.markdown(f"<div style='text-align: center; font-size: 13px; color: #64748b; margin-bottom: 20px;'>👤 Utente: {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
+
 
 
 
