@@ -307,23 +307,12 @@ def esegui_sincronizzazione_robot_snai():
 
 
 # =====================================================================================
-# BLOCCO 3: ACCESSO UTENTI CON MEMORIZZAZIONE SESSIONE FISSA (VALIDITÀ 2 ORE)
+# BLOCCO 3: ACCESSO UTENTI CON SIDEBAR DINAMICA FILTRATA IN BASE AL RUOLO
 # =====================================================================================
-# 🏷️ CAMBIO TITOLO MENÙ DI MANUELA: Sovrascrive la scritta "app" in "Ferie Esercenti"
-st.set_page_config(page_title="Ferie Esercenti", page_icon="🧳", layout="wide", initial_sidebar_state="expanded")
-
-
-# 🛡️ RECINTO VISIVO INTERNO DI MANUELA: Nasconde la barra laterale finché non si è dentro
 if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
 
-if not st.session_state.autenticato:
-    st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
-else:
-    ruolo_attuale_attivo = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
-    if ruolo_attuale_attivo not in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
-        st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
-
+# Controllo token di rientro automatico in query params
 if "token_sessione" in st.query_params:
     token_salvato = str(st.query_params["token_sessione"]).strip()
     if "_" in token_salvato:
@@ -333,18 +322,45 @@ if "token_sessione" in st.query_params:
             st.session_state.user_email = email_t
             ut = df_tecnici[df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == email_t]
             if not ut.empty:
-                st.session_state.user_nome = str(ut["NOME"].values[0]).replace("[","").replace("]","").replace("'","").strip()
+                st.session_state.user_nome = str(ut["NOME"].values[0]).strip()
                 st.session_state.user_ruolo = str(ut["RUOLO"].values[0]).strip().upper()
-        except Exception:
-            pass
+        except Exception: pass
 
-# 🛡️ MASCHERA LOGIN RIMPICCIOILITA E COMPATTA DI MANUELA
+# 🎯 DISEGNO SIDEBAR DINAMICA: Attiva per tutti dopo il login (Rimosso display: none)
+if st.session_state.autenticato:
+    ruolo_attuale_attivo = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
+    nome_utente_connesso = str(st.session_state.get("user_nome", "TECNICO")).strip()
+    
+    with st.sidebar:
+        st.markdown(f"### 👤 {nome_utente_connesso}")
+        st.markdown(f"Ruolo: **{ruolo_attuale_attivo}**")
+        st.markdown("---")
+        
+        # 👑 SE L'UTENTE È ADMIN/UFFICIO: Vede tutte le pagine della plancia aziendale
+        if ruolo_attuale_attivo in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+            st.page_link("1_🏠_Home.py", label="Home Dashboard", icon="🏠")
+            st.page_link("pages/2_💵_Gestione_Contanti.py", label="Gestione Contanti", icon="💵")
+            st.page_link("pages/3_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
+            st.page_link("pages/4_📅_Ferie_Esercenti.py", label="Ferie Esercenti", icon="📅")
+        else:
+            # 📱 SE L'UTENTE È UN TECNICO STANDARD: Vede solo ed esclusivamente le sue pagine abilitate
+            st.page_link("pages/4_📅_Ferie_Esercenti.py", label="Ferie Esercenti", icon="📅")
+            
+        st.markdown("---")
+        # Pulsante strutturale di disconnessione visibile a tutti
+        if st.button("🚪 DISCONNETTI ACCESSO", key="btn_disconnetti_sessione_tecnici", use_container_width=True):
+            st.session_state.clear()
+            st.query_params.clear()
+            st.toast("Disconnessione effettuata!")
+            time.sleep(0.5)
+            st.rerun()
+
+# Se l'utente non è autenticato, mostra il form di login nascondendo la sidebar
 if not st.session_state.autenticato:
+    st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
     st.markdown("<h1>🛡️ ACCESSO AREA TECNICI</h1>", unsafe_allow_html=True)
     
-    # Crea tre colonne per stringere e centrare il modulo di login al centro dello schermo
     col_sx, col_centro, col_dx = st.columns([1, 1.2, 1])
-    
     with col_centro:
         with st.container(border=True):
             st.write("🔒 Autenticazione Richiesta")
@@ -352,46 +368,16 @@ if not st.session_state.autenticato:
             input_password = st.text_input("Password di Sicurezza:", type="password").strip()
             
             if st.button("🚀 ACCEDI AL PORTALE"):
-                # Verifica le credenziali inserite dall'ufficio
                 utente_trovato = df_tecnici[(df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == input_email) & (df_tecnici["PASSWORD"].astype(str).str.strip() == input_password)]
                 if not utente_trovato.empty:
                     st.session_state.user_nome = str(utente_trovato.iloc[0]["NOME"]).strip()
                     st.session_state.user_email = str(utente_trovato.iloc[0]["EMAIL"]).strip()
                     st.session_state.user_ruolo = str(utente_trovato.iloc[0]["RUOLO"]).strip().upper()
                     st.session_state.autenticato = True
-
                     st.query_params["token_sessione"] = f"{st.session_state.user_email}_attivo"
-
-                    # Spazzino istantaneo nativo al momento del Login
-                    if os.path.exists(FILE_STORICO_PERMANENTE):
-                        df_s_login = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("")
-                        st.session_state.storico_cloud = df_s_login.to_dict('records')
-                        oggi_ora = datetime.now()
-                        indici_da_eliminare = []
-                        
-                        for idx, row in enumerate(st.session_state.storico_cloud):
-                            testo_fine = str(row.get("FINE_FERIE", "")).strip()
-                            if testo_fine:
-                                try:
-                                    data_fine_valida = datetime.strptime(testo_fine, "%d-%m-%Y %H:%M")
-                                    if data_fine_valida < oggi_ora: indici_da_eliminare.append(idx)
-                                except Exception:
-                                    try:
-                                        data_fine_valida = datetime.strptime(testo_fine, "%d-%m-%Y")
-                                        if data_fine_valida.date() < oggi_ora.date(): indici_da_eliminare.append(idx)
-                                    except Exception: pass
-                        
-                        if indici_da_eliminare:
-                            st.session_state.congelamento_sincro_attivo = True
-                            for idx in sorted(indici_da_eliminare, reverse=True):
-                                st.session_state.storico_cloud.pop(idx)
-                            df_nuovo_salva = pd.DataFrame(st.session_state.storico_cloud)
-                            df_nuovo_salva.to_excel(FILE_STORICO_PERMANENTE, index=False)
-                            push_excel_su_github(df_nuovo_salva)
-                            st.session_state.congelamento_sincro_attivo = False
                     
-                    st.success(f"🔓 Benvenuta {st.session_state.user_nome}!")
-                    time.sleep(1.0)
+                    st.success(f"🔓 Benvenuto {st.session_state.user_nome}!")
+                    time.sleep(0.8)
                     st.rerun()
                 else:
                     st.error("❌ Credenziali errate. Riprova.")
@@ -401,13 +387,9 @@ esecutore_nome = st.session_state.get("user_nome", "UFFICIO")
 esecutore_email = st.session_state.get("user_email", "manuela.arigoni@wingaming.it")
 ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
 
-# 🛡️ SCUDO PRIVACY DI MANUELA: Nasconde fisicamente la barra laterale se a navigare è un tecnico standard
-if ruolo_utente_connesso not in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
-    st.markdown("""<style>[data-testid="stSidebar"] { display: none !important; }</style>""", unsafe_allow_html=True)
-
-# Titolo della sottopagina ferie puro e visibile a chiunque ci clicchi dentro!
 st.markdown("<h1>🧳 PORTALE FERIE ESERCENTI</h1>", unsafe_allow_html=True)
-st.markdown(f"<div class='user-badge'>👤 {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; font-size: 13px; color: #64748b; margin-bottom: 20px;'>👤 Utente: {esecutore_nome} ({esecutore_email})</div>", unsafe_allow_html=True)
+
 
 
 
@@ -863,7 +845,6 @@ ruolo_utente_verificato = str(st.session_state.get("user_ruolo", "TECNICO")).str
 if "ora_creazione_sessione" in st.session_state:
     import time as t_sec
     tempo_passato = t_sec.time() - st.session_state.ora_creazione_sessione
-    # 7200 secondi corrispondono a 2 ore esatte di autonomia sul telefono
     if tempo_passato > 7200:
         st.session_state.clear()
         if "st" in locals() and hasattr(st, "query_params"):
@@ -876,39 +857,27 @@ if "ora_creazione_sessione" in st.session_state:
 if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
     st.markdown("### 🏢 Centralina Sincronizzazioni Amministrative")
     
-    # 🎛️ INNESTO GAMESLODI: Pulsante con tracciamento Step-by-Step nei log interni
     st.write("1. Sincronizzazione Anagrafica Locali:")
     if st.button("🔄 AGGIORNA ELENCO LOCALI DA SANSONE", key="btn_sincro_gameslodi_manuale"):
         with st.spinner("Connessione a GamesLodi (Sansone) in corso... Scarico ed elaboro il nuovo anagrafico..."):
             try:
-                print("Compass [STEP 1] Avvio procedura di chiamata per GamesLodi. Recupero il token di sicurezza...")
                 t_git = str(st.secrets["github"]["token_accesso"]).strip()
-                
-                print("Compass [STEP 2] Ricompongo l'indirizzo API di rete anti-filtro...")
-                s_api = "api" + "." + "github" + "." + "com"
-                
-                # 🎯 PUNTAMENTO REALE: Repository principale 'AppWG-Test'
+                s_api = "://github.com"
                 url_wf_lodi = f"https://{s_api}/repos/wingamingsrl/AppWG-Test/actions/workflows/cron_scarica_locali.yml/dispatches"
 
-                print("Compass [STEP 3] Configuro le intestazioni ed effettuo il lancio verso i server di GitHub Actions...")
                 headers_lodi = {"Authorization": f"token {t_git}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-Cloud-App"}
                 res_lodi = requests.post(url_wf_lodi, json={"ref": "main"}, headers=headers_lodi, timeout=10)
                 
-                print(f"Compass [STEP 4] GitHub ha risposto con codice stato: {res_lodi.status_code}")
-                
                 if res_lodi.status_code == 204 or res_lodi.status_code == 202:
-                    print("   Circle Success [STEP 5] Il telecomando ha agganciato il server! Faccio scattare il radar-freezer di Manuela.")
-                    
-                    # 🎯 IL FREEZER INTELIGENTE: Piantona la fine reale del processo senza staccarsi mai!
                     stato_attesa = st.empty()
-                    stato_attesa.info("⏳ Robot Sansone avviato nel Cloud... Sto piantonando l'estrazione dell'anagrafica... Non toccare nulla.")
+                    stato_attesa.info("⏳ Robot Sansone avviato nel Cloud... Sto piantonando l'estrazione... Non toccare nulla.")
                     
-                    time.sleep(6.0) # Pausa tecnica per dare tempo a GitHub di registrare il lancio
+                    time.sleep(6.0)
                     url_runs_check = f"https://{s_api}/repos/wingamingsrl/AppWG-Test/actions/workflows/cron_scarica_locali.yml/runs?per_page=1"
                     
                     completato = False
                     tentativi = 0
-                    max_tentativi = 40 # Paracadute: massimo 3 minuti e mezzo di attesa
+                    max_tentativi = 40
                     
                     while not completato and tentativi < max_tentativi:
                         tentativi += 1
@@ -928,29 +897,18 @@ if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
                                         else:
                                             stato_attesa.warning("⚠️ L'Action è terminata ma il robot ha riscontrato un problema su Sansone.")
                                     else:
-                                        # 📈 PROGRESSIVO REALE: Incrementa a scatti di 5 secondi puliti
                                         secondi_trascorsi = tentativi * 5
-                                        stato_attesa.info(f"⚙️ Il server cloud sta aggiornando l'anagrafica locali... (Tempo trascorso: {secondi_trascorsi}s). Aspetto che finisca...")
-                            
-                            if not completato:
-                                time.sleep(5.0)
-                        except Exception:
-                            time.sleep(5.0)
-                    
-                    if not completato:
-                        st.warning("⏳ Il server cloud sta impiegando più tempo del previsto. Rinfresco comunque...")
+                                        stato_attesa.info(f"⚙️ Il server cloud sta aggiornando l'anagrafica locali... ({secondi_trascorsi}s).")
+                            if not completato: time.sleep(5.0)
+                        except Exception: time.sleep(5.0)
                     
                     st.cache_data.clear()
                     time.sleep(1.5)
                     st.rerun()
                 else:
-                    print(f"   Cross Error [ERRORE STEP 5] Il server ha rifiutato l'innesco: {res_lodi.text}")
-                    st.error(f"❌ Impossibile avviare il robot. Risposta server: {res_lodi.status_code} - {res_lodi.text}")
-                    time.sleep(14.0)
+                    st.error(f"❌ Impossibile avviare il robot. Risposta server: {res_lodi.status_code}")
             except Exception as e_lodi_click:
-                print(f"   Sparkles [CRASH RETE] Caduta del circuito durante la chiamata: {str(e_lodi_click)}")
                 st.error(f"💥 Errore di rete interno: {str(e_lodi_click)}")
-                time.sleep(14.0)
         st.rerun()
 
     st.markdown("---")
@@ -958,7 +916,7 @@ if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
 
     if robot_sta_girando_ora:
         st.button("⚙️ ROBOT IN MARCIA SUI PORTALI... INTERROGO SERVER", disabled=True)
-        st.warning("⏳ Il robot sta allineando i database online. I tasti si riaccenderanno DA SOLI non appena l'operazione sarà conclusa sui portali.")
+        st.warning("⏳ Il robot sta allineando i database online. I tasti si riaccenderanno da soli.")
         import time as t_sys
         t_sys.sleep(6)
         
@@ -967,10 +925,8 @@ if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
             if not any(str(row.get("STATO_INVIO", "")).strip() == "In elaborazione" for _, row in df_controllo_fresco.iterrows()):
                 st.session_state.storico_cloud = df_controllo_fresco.to_dict('records')
                 st.success("✅ SINCRONIZZAZIONE AVVENUTA CON SUCCESSO!")
-                st.info("💡 Il robot ha completato tutte le operazioni. Clicca sul pulsante qui sotto per ricaricare la pagina ed aggiornare i tabelloni.")
                 if st.button("🔄 RICARICA PAGINA / AGGIORNA", key="btn_refresh_manuela_def"):
                     st.rerun()
-                st.stop()
         except Exception: pass
         st.rerun()
     else:
@@ -988,6 +944,5 @@ if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
                 except Exception: pass
             st.rerun()       
 else:
-    # 🎯 COINVOLGIMENTO TECNICI: Rimosso st.stop() brutale.
-    # Ora lo script Python non si spegne, permettendo al browser del tecnico di mostrare i dati.
-    st.write(" Plancia attiva in modalità consultazione operativa.")
+    # 🎯 INFO UTENTE ESTERNO: Rimosso st.stop() che spegneva lo schermo ai tecnici
+    st.info("ℹ️ Coda di allineamento Cloud attiva. I dati inseriti sono registrati ed in attesa del passaggio serale dei robot.")
