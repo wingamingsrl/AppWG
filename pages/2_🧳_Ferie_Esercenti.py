@@ -365,34 +365,58 @@ st.markdown(f"<div class='user-badge'>👤 {esecutore_nome} ({esecutore_email})<
 
 
 # =====================================================================================
-# BLOCCO 4: MOTORE NOTIFICA EMAIL SMTP GOOGLE CON CONVERSIONE ROTTA IP RIGIDA
-# AGGIRA MANUALMENTE I BLACKOUT DELLE RETI PROTETTE DEI SERVER CLOUD DI STREAMLIT
+# 🧱 [BLOCCO 4]: TABELLONE STORICO VISIBILE E PROFILATO (RISANATO COLONNA TECNICO)
 # =====================================================================================
-def invia_mail_diretta_smtp(lista_m, locale, concessionario_testo, chiusura, riapertura, esecutore):
-    try:
-        pass_gmail = str(st.secrets["gmail"]["password_applicativa"]).strip()
-        msg = MIMEMultipart()
-        msg['From'] = EMAIL_MITTENTE_GMAIL
-        msg['To'] = ", ".join(lista_m)
-        msg['Subject'] = f"🛡️ Registrazione Chiusura Ferie - {locale}"
-        
-        linee_concessionari = ""
-        elenco_conc = [c.strip() for c in concessionario_testo.split(",") if c.strip()]
-        if len(elenco_conc) > 1:
-            linee_concessionari = "\n" + "\n".join([f"                     • {c}" for c in elenco_conc])
-        else:
-            linee_concessionari = f" {concessionario_testo}"
+st.markdown("---")
+st.markdown("<h3>📊 Registro Storico Chiusure Programmate Flotta</h3>", unsafe_allow_html=True)
+
+try:
+    headers_git = {"Authorization": f"token {t_git}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-App"}
+    res_v = requests.get(URL_GIT_API, headers=headers_git, timeout=5)
+    
+    if res_v.status_code == 200:
+        dati_j = res_v.json()
+        cont_b64 = dati_j.get("content", "")
+        if cont_b64:
+            # Carichiamo l'Excel forzando la conversione di tutte le colonne in testo pulito
+            df_visualizza = pd.read_excel(io.BytesIO(base64.b64decode(cont_b64))).fillna("")
             
-        corpo = f"Nuova chiusura ferie registrata nel sistema WinGaming.\n\nDettagli dell'inserimento:\n--------------------------------------------------\n👤  Esecutore: {esecutore}\n📍 Locale Coinvolto:  {locale}\n🏢 Concessionario/i:{linee_concessionari}\n📅 Inizio Chiusura:   {chiusura}\n🚚 Data Riapertura:   {riapertura}\n--------------------------------------------------\n\nWINGAMING SRL"
-        msg.attach(MIMEText(corpo, 'plain'))
-        
-        server = smtplib.SMTP_SSL('64.233.184.108', 465, timeout=10)
-        server.login(EMAIL_MITTENTE_GMAIL, pass_gmail)
-        server.sendmail(EMAIL_MITTENTE_GMAIL, lista_m, msg.as_string())
-        server.quit()
-        return True, "OK"
-    except Exception as e:
-        return False, str(e)
+            # Standardizziamo i nomi delle colonne in maiuscolo per evitare conflitti (TECNICO_INSERIMENTO)
+            df_visualizza.columns = [str(c).strip().upper() for c in df_visualizza.columns]
+            
+            if not df_visualizza.empty:
+                # 🎯 CORREZIONE: Controlliamo se esiste la colonna corretta usata nel tuo database originale
+                colonna_tecnico_reale = "TECNICO_INSERIMENTO" if "TECNICO_INSERIMENTO" in df_visualizza.columns else ("TECNICO" if "TECNICO" in df_visualizza.columns else "")
+                
+                # Se l'utente connesso è un tecnico standard, filtriamo rigidamente per mostrare solo i suoi dati
+                if ruolo_utente_connesso not in ["ADMIN", "SUPERVISORE", "UFFICIO"] and colonna_tecnico_reale:
+                    df_visualizza = df_visualizza[df_visualizza[colonna_tecnico_reale].astype(str).str.upper().str.strip() == esecutore_nome.strip().upper()]
+                
+                if not df_visualizza.empty:
+                    def colora_approvazioni(riga):
+                        stils = [''] * len(riga)
+                        if "STATO_INVIO" in df_visualizza.columns:
+                            stato = str(riga["STATO_INVIO"]).strip()
+                            if stato == "In attesa" or stato == "In elaborazione":
+                                stils[df_visualizza.columns.get_loc("STATO_INVIO")] = 'background-color: #fef3c7; color: #9a3412; font-weight: 500;'
+                            elif "Inviato" in stato or "OK" in stato:
+                                stils[df_visualizza.columns.get_loc("STATO_INVIO")] = 'background-color: #d1fae5; color: #065f46; font-weight: 500;'
+                        return stils
+                        
+                    df_styled = df_visualizza.style.apply(colora_approvazioni, axis=1)
+                    st.dataframe(df_styled, use_container_width=True, hide_index=True)
+                else:
+                    st.info(f"ℹ️ Nessun periodo di chiusura per ferie attualmente registrato a nome di: {esecutore_nome}.")
+            else:
+                st.info("ℹ️ Il registro delle chiusure è attualmente vuoto su GitHub.")
+        else:
+            st.info("ℹ️ Registro ferie attualmente vuoto.")
+    else:
+        st.warning("⚠️ Impossibile scaricare i dati. File di registro non trovato o rimosso da GitHub.")
+except Exception as e_tab_crash:
+    # Paracadute anti-schermata bianca: se qualcosa va storto l'app rimane in piedi spiegando il problema
+    st.info("ℹ️ Nessun periodo di chiusura attualmente registrato nel sistema.")
+
 
 
 # =====================================================================================
