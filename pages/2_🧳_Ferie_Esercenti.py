@@ -585,7 +585,8 @@ if submit_button:
             for provider_singolo in lista_provider_puliti:
                 riga_singola = {
                     "DATA_INSERIMENTO": str(data_inserimento_it),
-                    "_INSERIMENTO": str(esecutore_nome),
+                    # 🎯 CORREZIONE CHIRURGICA: Ripristinato il nome colonna corretto per l'Excel
+                    "TECNICO_INSERIMENTO": str(esecutore_nome).strip().upper(),
                     "CODICE_LOCALE": str(codice_estratto),
                     "NOME_LOCALE": str(nome_puro_locale),
                     "CONCESSIONARIO": str(provider_singolo),
@@ -596,6 +597,7 @@ if submit_button:
                     "ROBOT_ACTION": "MODIFICA" if forza_sovrascrittura else "NUOVA"
                 }
                 righe_sdoppiate_da_salvare.append(riga_singola)
+
        
             lista_m = [EMAIL_MANUELA_RICEVENTE, esecutore_email]
             if co_destinatario != "Nessun collega" and " (" in str(co_destinatario):
@@ -699,36 +701,34 @@ except Exception: pass
 # BLOCCO 8: TABELLONE VISIVO: PRIVILEGI ADMIN / TECNICI (VISTA IN ATTESA)
 # =====================================================================================
 st.markdown("---")
-# 🎯 RECUPERO DIRETTO DEI DATI DI SESSIONE GIÀ IN MEMORIA
 ruolo_loggato = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
 nome_loggato = str(st.session_state.get("user_nome", "UFFICIO")).strip().upper()
 
-# Leggiamo l'Excel reale direttamente dal disco per essere sicuri al 100% di avere i dati freschi
 if os.path.exists(FILE_STORICO_PERMANENTE):
     df_excel_reale = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("")
-    # Standardizziamo i nomi delle colonne in maiuscolo per evitare errori di battitura
     df_excel_reale.columns = [str(c).strip().upper() for c in df_excel_reale.columns]
 else:
     df_excel_reale = pd.DataFrame(columns=COLONNE_REALI_UFFICIO)
 
-# Isoliamo le righe in fase di lavorazione (Nuova, Modifica, Elimina)
+# 🎯 PARACADUTE DI RECUPERO: Identifica se nel file Excel c'è la colonna corretta o quella sporca
+colonna_filtro_tecnico = "TECNICO_INSERIMENTO" if "TECNICO_INSERIMENTO" in df_excel_reale.columns else ("_INSERIMENTO" if "_INSERIMENTO" in df_excel_reale.columns else "")
+
 if ruolo_loggato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
     st.markdown("### 📊 [VISTA ADMIN] Tutte le chiusure della flotta in attesa")
     df_lavorazione = df_excel_reale[df_excel_reale["ROBOT_ACTION"].str.upper().isin(["NUOVA", "MODIFICA", "ELIMINA"])]
 else:
     st.markdown("### 📊 Le tue chiusure in attesa di allineamento")
-    # 🎯 CONTROLLO DIRETTO SUL TECNICO LOGGATO: Filtra l'Excel usando il nome in memoria RAM
-    df_lavorazione = df_excel_reale[
-        (df_excel_reale["ROBOT_ACTION"].str.upper().isin(["NUOVA", "MODIFICA", "ELIMINA"])) & 
-        (df_excel_reale["TECNICO_INSERIMENTO"].str.upper().str.strip() == nome_loggato)
-    ]
+    if colonna_filtro_tecnico:
+        df_lavorazione = df_excel_reale[
+            (df_excel_reale["ROBOT_ACTION"].str.upper().isin(["NUOVA", "MODIFICA", "ELIMINA"])) & 
+            (df_excel_reale[colonna_filtro_tecnico].astype(str).str.upper().str.strip() == nome_loggato)
+        ]
+    else:
+        df_lavorazione = pd.DataFrame()
 
 if not df_lavorazione.empty:
-    if ruolo_loggato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
-        colonne_visibili = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION", "TECNICO_INSERIMENTO"]
-    else:
-        colonne_visibili = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION"]
-    st.dataframe(df_lavorazione.reindex(columns=colonne_visibili).fillna(""), hide_index=True, use_container_width=True)
+    colonne_presenti = [c for c in ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION"] if c in df_lavorazione.columns]
+    st.dataframe(df_lavorazione.reindex(columns=colonne_presenti).fillna(""), hide_index=True, use_container_width=True)
 else:
     st.success(f"✅ Nessuna pratica in coda per la tua visualizzazione, {nome_loggato}!")
 
@@ -742,15 +742,14 @@ if ruolo_loggato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
     df_giri = df_excel_reale.copy()
 else:
     st.markdown("### 📊 I tuoi Promemoria Giri Logistici Registrati")
-    # 🎯 CONTROLLO DIRETTO SUL TECNICO LOGGATO: Mostra lo storico abbinando il nome in RAM
-    df_giri = df_excel_reale[df_excel_reale["TECNICO_INSERIMENTO"].str.upper().str.strip() == nome_loggato]
+    if colonna_filtro_tecnico:
+        df_giri = df_excel_reale[df_excel_reale[colonna_filtro_tecnico].astype(str).str.upper().str.strip() == nome_loggato]
+    else:
+        df_giri = pd.DataFrame()
 
 if not df_giri.empty:
-    if ruolo_loggato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
-        colonne_visibili_giri = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION", "TECNICO_INSERIMENTO"]
-    else:
-        colonne_visibili_giri = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION"]
-    st.dataframe(df_giri.reindex(columns=colonne_visibly_giri).fillna(""), hide_index=True, use_container_width=True)
+    colonne_presenti_giri = [c for c in ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION"] if c in df_giri.columns]
+    st.dataframe(df_giri.reindex(columns=colonne_presenti_giri).fillna(""), hide_index=True, use_container_width=True)
 else:
     st.success(f"✅ Nessun promemoria giro logistico registrato a sistema, {nome_loggato}.")
 
