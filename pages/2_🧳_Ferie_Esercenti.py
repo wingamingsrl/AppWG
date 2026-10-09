@@ -681,63 +681,65 @@ st.markdown("---")
 email_tab_check = str(st.session_state.get("user_email", "")).strip().lower()
 utente_tab_check = str(st.session_state.get("user_nome", "UFFICIO")).strip().upper()
 
-if "manuela" in email_tab_check or "admin" in email_tab_check or "ufficio" in email_tab_check:
+# Recupero dello storico Dict centralizzato dalla RAM di sessione
+storico_ram_fresco = st.session_state.get("storico_cloud", [])
+if not isinstance(storico_ram_fresco, list):
+    storico_ram_fresco = []
+
+if "manuela" in email_tab_check or "admin" in email_tab_check or "ufficio" in email_tab_check or ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
     st.markdown("### 📊 [VISTA ADMIN] Tutte le chiusure della flotta in attesa")
     righe_lavorazione_generiche = [
-        row for row in st.session_state.get("storico_cloud", []) 
+        row for row in storico_ram_fresco 
         if str(row.get("ROBOT_ACTION", "")).strip().upper() in ["NUOVA", "MODIFICA", "ELIMINA"]
     ]
 else:
     st.markdown("### 📊 Le tue chiusure in attesa di allineamento")
+    # Filtro profilato sulla colonna nativa dell'Excel per l'esattore/tecnico corrente
     righe_lavorazione_generiche = [
-        row for row in st.session_state.get("storico_cloud", []) 
+        row for row in storico_ram_fresco 
         if str(row.get("ROBOT_ACTION", "")).strip().upper() in ["NUOVA", "MODIFICA", "ELIMINA"]
-        and str(row.get("TECNICO_INSERIMENTO", "")).strip().upper() == utente_tab_check
+        and str(row.get("TECNICO_INSERIMENTO", "")).strip().upper() == utente_tab_check.strip()
     ]
 
 if righe_lavorazione_generiche:
     df_lavorazione = pd.DataFrame(righe_lavorazione_generiche)
-    if "manuela" in email_tab_check or "admin" in email_tab_check or "ufficio" in email_tab_check:
+    if "manuela" in email_tab_check or "admin" in email_tab_check or "ufficio" in email_tab_check or ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
         colonne_visibili = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION", "TECNICO_INSERIMENTO"]
     else:
         colonne_visibili = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION"]
     df_visibile_pulito = df_lavorazione.reindex(columns=colonne_visibili).fillna("")
-    st.dataframe(df_visibile_pulito, hide_index=True)
+    st.dataframe(df_visibile_pulito, hide_index=True, use_container_width=True)
 else:
     st.success(f"✅ Nessuna pratica in coda per la tua visualizzazione, {utente_tab_check}!")
+
 # =====================================================================================
 # BLOCCO 9: TABELLONE GIRI LOGISTICI DI MANUELA: PRIVILEGI GERARCHICI TOTALI (STORICO INCLUSO)
 # =====================================================================================
 st.markdown("---")
-email_loggata_pulita = str(st.session_state.get("user_email", "")).strip().lower()
-utente_loggato_maiuscolo = str(st.session_state.get("user_nome", "UFFICIO")).strip().upper()
-ruolo_utente_verificato = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
-
-# 🛡️ PARACADUTE DI SICUREZZA DI MANUELA: Previene il NameError in caso di logout azzerando la coda
 righe_giri_logistici = []
 
-# SBLOCCO DIREZIONE: Se l'utente è ADMIN, SUPERVISORE o UFFICIO nell'Excel, vede tutta la flotta
-if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"] or "manuela" in email_loggata_pulita or "admin" in email_loggata_pulita or "ufficio" in email_loggata_pulita:
+# Sblocco visualizzazione gerarchica ad albero
+if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"] or "manuela" in email_tab_check or "admin" in email_tab_check or "ufficio" in email_tab_check:
     st.markdown("### 📊 [VISTA ADMIN] Tutti i Promemoria Giri Logistici della Flotta")
-    righe_giri_logistici = st.session_state.get("storico_cloud", []) if st.session_state.get("storico_cloud", []) else []
+    righe_giri_logistici = storico_ram_fresco
 else:
-    # Vista Tecnici limitata: vedono solo i locali dove il loro NOME coincide con il titolare
-    if st.session_state.get("storico_cloud", []):
-        righe_giri_logistici = [
-            row for row in st.session_state.get("storico_cloud", []) 
-            if str(row.get("TECNICO_INSERIMENTO", "")).strip().upper() == utente_loggato_maiuscolo
-        ]
+    st.markdown("### 📊 I tuoi Promemoria Giri Logistici Registrati")
+    righe_giri_logistici = [
+        row for row in storico_ram_fresco 
+        if str(row.get("TECNICO_INSERIMENTO", "")).strip().upper() == utente_tab_check.strip()
+    ]
 
 if righe_giri_logistici:
     df_lavorazione_giri = pd.DataFrame(righe_giri_logistici)
-    if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"] or "manuela" in email_loggata_pulita or "admin" in email_loggata_pulita or "ufficio" in email_loggata_pulita:
+    if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"] or "manuela" in email_tab_check or "admin" in email_tab_check or "ufficio" in email_tab_check:
         colonne_visibili_giri = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION", "TECNICO_INSERIMENTO"]
     else:
         colonne_visibili_giri = ["CODICE_LOCALE", "NOME_LOCALE", "CONCESSIONARIO", "INIZIO_FERIE", "FINE_FERIE", "ROBOT_ACTION"]
     df_visibile_giri_pulito = df_lavorazione_giri.reindex(columns=colonne_visibili_giri).fillna("")
-    st.dataframe(df_visibile_giri_pulito, hide_index=True)
+    st.dataframe(df_visibile_giri_pulito, hide_index=True, use_container_width=True)
 else:
-    st.success(f"✅ Nessun promemoria giro logistico registrato a sistema, {utente_loggato_maiuscolo}.")
+    st.success(f"✅ Nessun promemoria giro logistico registrato a sistema, {utente_tab_check}.")
+
 
 
 # =====================================================================================
@@ -749,10 +751,13 @@ st.markdown("### 🗑️ Cancella un Periodo Registrato")
 opzioni_cancellazione = ["- Seleziona la riga da eliminare -"]
 mappa_indici_reali = {}
 
-if "storico_cloud" in st.session_state and st.session_state.storico_cloud:
-    for idx, row in enumerate(st.session_state.storico_cloud):
+if storico_ram_fresco:
+    for idx, row in enumerate(storico_ram_fresco):
         azione_corrente = str(row.get("ROBOT_ACTION", "")).strip().upper()
-        if azione_corrente != "ELIMINA":
+        appartiene_a_utente = str(row.get("TECNICO_INSERIMENTO", "")).strip().upper() == utente_tab_check.strip()
+        e_direzione = ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"] or "manuela" in email_tab_check
+        
+        if azione_corrente != "ELIMINA" and (appartiene_a_utente or e_direzione):
             testo_opzione = f"ID {idx} | {row.get('CODICE_LOCALE', '')} - {row.get('NOME_LOCALE', '')} [{row.get('CONCESSIONARIO','')}] (Dal {row.get('INIZIO_FERIE', '')})"
             opzioni_cancellazione.append(testo_opzione)
             mappa_indici_reali[testo_opzione] = idx
@@ -768,28 +773,22 @@ if selezione_delete != "- Seleziona la riga da eliminare -" and selezione_delete
         azione_attuale_riga = str(riga_scelta.get("ROBOT_ACTION", "")).strip().upper()
             
         if st.button("❌ ELIMINA DEFINITIVAMENTE QUESTA CHIUSURA"):
-            # 🛡️ CILIEGINA DI MANUELA: Se la riga è NUOVA o MODIFICA, la cancella fisicamente dall'Excel!
             if azione_attuale_riga in ["NUOVA", "MODIFICA"]:
-                # Rimuove fisicamente il record dalla memoria dello smartphone usando una lista filtrata
                 st.session_state.storico_cloud = [
                     r for r in st.session_state.storico_cloud 
                     if str(r.get("CODICE_LOCALE", "")).strip() != codice_locale_target
                 ]
-                st.success(f"🧹 Pulizia istantanea: Pratica rimossa fisicamente dall'Excel perché non ancora inviata ai portali!")
+                st.success(f"🧹 Pulizia istantanea eseguita con successo!")
             else:
-                # Se la riga era già stata processata (cella vuota), mette il marchio ELIMINA per il robot
                 for riga_cloud in st.session_state.storico_cloud:
                     if str(riga_cloud.get("CODICE_LOCALE", "")).strip() == codice_locale_target:
                         riga_cloud["ROBOT_ACTION"] = "ELIMINA"
-                st.success(f"🗑️ Richiesta di eliminazione inviata sul portale Snaitech per: {nome_locale_target}!")
+                st.success(f"🗑️ Richiesta di eliminazione inviata sul portale per: {nome_locale_target}!")
             
-            # Salva il database aggiornato su disco e spinge la modifica pulita su GitHub
             df_nuovo_salva = pd.DataFrame(st.session_state.storico_cloud)
             df_nuovo_salva.to_excel(FILE_STORICO_PERMANENTE, index=False)
-            try: 
-                push_excel_su_github(df_nuovo_salva)
-            except Exception: 
-                pass
+            try: push_excel_su_github(df_nuovo_salva)
+            except Exception: pass
                 
             time.sleep(2.0)
             st.rerun()
@@ -799,7 +798,8 @@ if selezione_delete != "- Seleziona la riga da eliminare -" and selezione_delete
 # =====================================================================================
 # AREA AMMINISTRATORE: UPLOADER EXCEL (VERSIONE INTEGRALE CONVERTITRICE)
 # =====================================================================================
-if "manuela" in email_loggata_pulita or "admin" in email_loggata_pulita or "ufficio" in email_loggata_pulita:
+# 🎯 ALLINEAMENTO MAGAZZINO: Controllo rigido basato esclusivamente sui ruoli Excel della direzione
+if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
     st.markdown("---")
     st.markdown("### 📤 Ricarica Registro Excel Aggiornato dall'Ufficio")
     file_caricato = st.file_uploader("Trascina il file storico_ferie.xlsx modificato per caricare i dati nel portale:", type=["xlsx"])
@@ -825,108 +825,41 @@ if "manuela" in email_loggata_pulita or "admin" in email_loggata_pulita or "uffi
                     time.sleep(2.0)
                     st.rerun()
             else:
-                st.error("❌ Struttura file non valida. Controlla che i nomi delle colonne siano in orizzontale.")
+                st.error("❌ Struttura file non valida. Controlla i nomi delle colonne.")
         except Exception as e_load: 
             st.error(f"❌ Errore lettura: {str(e_load)}")
+
 # =====================================================================================
-# BLOCCO 11: PRIVILEGI ADMIN E TIMER SICUREZZA 2 ORE INTEGRATO (ELASTICITÀ TOTALE)
+# CENTRALINA AUTOMAZIONI SINCRO PORTALI (SBLOCCO DI CODA)
 # =====================================================================================
 st.markdown("---")
-email_finale_pulita = str(st.session_state.get("user_email", "")).strip().lower()
-nome_finale_pulito = str(st.session_state.get("user_nome", "")).strip().upper()
-ruolo_utente_verificato = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
-
-# ⏱️ CENTRALINA 2 ORE DI MANUELA: Verifica il timeout di sessione prima di disegnare i tasti
-if "ora_creazione_sessione" in st.session_state:
-    import time as t_sec
-    tempo_passato = t_sec.time() - st.session_state.ora_creazione_sessione
-    if tempo_passato > 7200:
-        st.session_state.clear()
-        if "st" in locals() and hasattr(st, "query_params"):
-            st.query_params.clear()
-        st.warning("🔒 Sessione scaduta per inattività (Limite 2 ore). Effettua nuovamente il login.")
-        time.sleep(2.0)
-        st.rerun()
-
-# 🛡️ PRIVILEGIO ADMIN: Si attiva solo se il ruolo nell'Excel è ADMIN, SUPERVISORE o UFFICIO
-if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
     st.markdown("### 🏢 Centralina Sincronizzazioni Amministrative")
-    
     st.write("1. Sincronizzazione Anagrafica Locali:")
     if st.button("🔄 AGGIORNA ELENCO LOCALI DA SANSONE", key="btn_sincro_gameslodi_manuale"):
-        with st.spinner("Connessione a GamesLodi (Sansone) in corso... Scarico ed elaboro il nuovo anagrafico..."):
+        with st.spinner("Connessione a GamesLodi (Sansone) in corso..."):
             try:
                 t_git = str(st.secrets["github"]["token_accesso"]).strip()
                 s_api = "://github.com"
                 url_wf_lodi = f"https://{s_api}/repos/wingamingsrl/AppWG-Test/actions/workflows/cron_scarica_locali.yml/dispatches"
-
                 headers_lodi = {"Authorization": f"token {t_git}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-Cloud-App"}
                 res_lodi = requests.post(url_wf_lodi, json={"ref": "main"}, headers=headers_lodi, timeout=10)
                 
                 if res_lodi.status_code == 204 or res_lodi.status_code == 202:
                     stato_attesa = st.empty()
-                    stato_attesa.info("⏳ Robot Sansone avviato nel Cloud... Sto piantonando l'estrazione... Non toccare nulla.")
-                    
+                    stato_attesa.info("⏳ Robot Sansone avviato nel Cloud... Non toccare nulla.")
                     time.sleep(6.0)
-                    url_runs_check = f"https://{s_api}/repos/wingamingsrl/AppWG-Test/actions/workflows/cron_scarica_locali.yml/runs?per_page=1"
-                    
-                    completato = False
-                    tentativi = 0
-                    max_tentativi = 40
-                    
-                    while not completato and tentativi < max_tentativi:
-                        tentativi += 1
-                        try:
-                            res_check = requests.get(url_runs_check, headers=headers_lodi, timeout=5)
-                            if res_check.status_code == 200:
-                                dati_runs = res_check.json()
-                                if dati_runs.get("workflow_runs"):
-                                    run_corrente = dati_runs["workflow_runs"][0]
-                                    status_action = run_corrente.get("status", "").strip().lower()
-                                    conclusion_action = run_corrente.get("conclusion", "")
-                                    
-                                    if status_action == "completed":
-                                        completato = True
-                                        if str(conclusion_action).strip().lower() == "success":
-                                            stato_attesa.success("✅ AGGIORNAMENTO COMPLETATO! La nuova tendina dei locali è pronta ed attiva!")
-                                        else:
-                                            stato_attesa.warning("⚠️ L'Action è terminata ma il robot ha riscontrato un problema su Sansone.")
-                                    else:
-                                        secondi_trascorsi = tentativi * 5
-                                        stato_attesa.info(f"⚙️ Il server cloud sta aggiornando l'anagrafica locali... ({secondi_trascorsi}s).")
-                            if not completato: time.sleep(5.0)
-                        except Exception: time.sleep(5.0)
-                    
                     st.cache_data.clear()
-                    time.sleep(1.5)
                     st.rerun()
-                else:
-                    st.error(f"❌ Impossibile avviare il robot. Risposta server: {res_lodi.status_code}")
-            except Exception as e_lodi_click:
-                st.error(f"💥 Errore di rete interno: {str(e_lodi_click)}")
-        st.rerun()
+            except Exception: pass
 
     st.markdown("---")
     st.write("2. Invio Ferie e Sincronizzazione Portali:")
-
     if robot_sta_girando_ora:
-        st.button("⚙️ ROBOT IN MARCIA SUI PORTALI... INTERROGO SERVER", disabled=True)
-        st.warning("⏳ Il robot sta allineando i database online. I tasti si riaccenderanno da soli.")
-        import time as t_sys
-        t_sys.sleep(6)
-        
-        try:
-            df_controllo_fresco = pd.read_excel(FILE_STORICO_PERMANENTE).fillna("")
-            if not any(str(row.get("STATO_INVIO", "")).strip() == "In elaborazione" for _, row in df_controllo_fresco.iterrows()):
-                st.session_state.storico_cloud = df_controllo_fresco.to_dict('records')
-                st.success("✅ SINCRONIZZAZIONE AVVENUTA CON SUCCESSO!")
-                if st.button("🔄 RICARICA PAGINA / AGGIORNA", key="btn_refresh_manuela_def"):
-                    st.rerun()
-        except Exception: pass
-        st.rerun()
+        st.button("⚙️ ROBOT IN MARCIA SUI PORTALI...", disabled=True)
     else:
         if st.button("🚀 AVVIA SINCRO FORZATA PORTALI", key="palo_sincro_admin_elastico_assoluto"):
-            with st.spinner("Blindatura database aziendale e avvio server..."):
+            with st.spinner("Avvio server..."):
                 try:
                     for riga_ram in st.session_state.storico_cloud:
                         if str(riga_ram.get("ROBOT_ACTION", "")).strip().upper() in ["NUOVA", "MODIFICA", "ELIMINA"]:
@@ -935,9 +868,8 @@ if ruolo_utente_verificato in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
                     df_spingi_lock.to_excel(FILE_STORICO_PERMANENTE, index=False)
                     push_excel_su_github(df_spingi_lock)
                     esegui_sincronizzazione_robot_snai()
-                    time.sleep(2)
                 except Exception: pass
-            st.rerun()       
+            st.rerun()
 else:
-    # 🎯 INFO UTENTE ESTERNO: Rimosso st.stop() che spegneva lo schermo ai tecnici
-    st.info("ℹ️ Coda di allineamento Cloud attiva. I dati inseriti sono registrati ed in attesa del passaggio serale dei robot.")
+    # 📱 VISTA TECNICI TERRITORIO: Rimosso st.stop() ed eliminata ogni scritta personalizzata
+    st.info("ℹ️ Portale operativo attivo in modalità consultazione.")
