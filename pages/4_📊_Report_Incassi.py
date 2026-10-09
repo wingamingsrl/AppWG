@@ -343,7 +343,7 @@ if file_realmente_valido and os.path.exists(FILE_INCASSI_GREZZO):
                     #server.sendmail("manuela.arigoni@wingaming.it", ["manuela.arigoni@wingaming.it"], msg.as_string())
                     
                     # LOGICA REALE PRODUCTION PRONTA PER IL FUTURO
-                    # tutti_ricevitori = [mail_dest_originale, "manuela.arigoni@wingaming.it", "alessandro.frigerio@wingaming.it"]
+                    tutti_ricevitori = [mail_dest_originale, "manuela.arigoni@wingaming.it", "alessandro.frigerio@wingaming.it"]
                     server.sendmail("manuela.arigoni@wingaming.it", tutti_ricevitori, msg.as_string())
                     
                     contatore_effettivo_inviate += 1
