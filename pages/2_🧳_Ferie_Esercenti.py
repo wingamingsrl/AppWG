@@ -314,18 +314,18 @@ if "autenticato" not in st.session_state:
     st.session_state.autenticato = False
 
 # Controllo token di rientro automatico in query params
-if "token_sessione" in st.query_params:
-    token_salvato = str(st.query_params["token_sessione"]).strip()
-    if "_" in token_salvato:
-        try:
-            email_t = token_salvato.split("_")[0].strip().lower()
-            st.session_state.autenticato = True
-            st.session_state.user_email = email_t
-            ut = df_tecnici[df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == email_t]
-            if not ut.empty:
-                st.session_state.user_nome = str(ut["NOME"].values[0]).strip()
-                st.session_state.user_ruolo = str(ut["RUOLO"].values[0]).strip().upper()
-        except Exception: pass
+#if "token_sessione" in st.query_params:
+#    token_salvato = str(st.query_params["token_sessione"]).strip()
+#    if "_" in token_salvato:
+#        try:
+#            email_t = token_salvato.split("_")[0].strip().lower()
+#            st.session_state.autenticato = True
+#            st.session_state.user_email = email_t
+#            ut = df_tecnici[df_tecnici["EMAIL"].astype(str).str.lower().str.strip() == email_t]
+#            if not ut.empty:
+#                st.session_state.user_nome = str(ut["NOME"].values[0]).strip()
+#                st.session_state.user_ruolo = str(ut["RUOLO"].values[0]).strip().upper()
+#        except Exception: pass
 
 # 🎯 DISEGNO DELLA SIDEBAR UNICA E PERSONALIZZATA
 if st.session_state.autenticato:
