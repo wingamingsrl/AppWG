@@ -113,12 +113,12 @@ with st.sidebar:
         st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
         
     st.markdown("---")
-    if st.button("🚪 DISCONNETTI ACCESSO", key="btn_logout_centralizzato_home", use_container_width=True):
-        st.session_state.clear()
-        st.query_params.clear()
-        st.toast("Disconnessione effettuata!")
-        time.sleep(0.5)
-        st.rerun()
+if st.button("🚪 DISCONNETTI ACCESSO", key="btn_logout_centralizzato_home", use_container_width=True):
+    st.session_state.clear()
+    st.query_params.clear()
+    st.toast("Disconnessione effettuata!")
+    time.sleep(0.5)
+    st.rerun()
 
 # 🤍 INTERFACCIA DI BENVENUTO IN BASE AL PRIVILEGIO DI RUOLO
 st.markdown("<h1>🏠 WinGaming Home</h1>", unsafe_allow_html=True)
