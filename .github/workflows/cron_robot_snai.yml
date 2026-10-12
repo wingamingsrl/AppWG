@@ -1,9 +1,11 @@
-name: Sincronizzazione Automatica Ferie Snaitech WG
+name: "🤖 Sincronizzazione Notturna Ferie Snaitech - WinGaming"
 
 on:
   workflow_dispatch:
   schedule:
-     - cron: '0 1 * * *'
+    # 🎯 PRECISIONE: Gira ogni notte alle 01:34 UTC (corrispondenti alle 03:34 di notte in Italia)
+    - cron: '34 1 * * *'
+
           
 jobs:
   run-robot-snai:
