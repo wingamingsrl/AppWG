@@ -655,7 +655,7 @@ try:
                 col_c1, col_c2, col_c3 = st.columns(3)
 
 # =====================================================================================
-# 🧱 [BLOCCO 4 di 4]: I 3 PULSANTI AZIENDALI CON SALVATAGGIO INTEGRATO EXCEL
+# 🧱 [BLOCCO 4 di 4]: I 3 PULSANTI IN STILE LEGGERO CON ELIMINAZIONE MASSIVA INTEGRATA
 # =====================================================================================
                 with col_c1:
                     if st.button("🏦 MARCA MANUALE COME: VERSATO OK", key="btn_marca_versato_manuale", use_container_width=True):
@@ -686,18 +686,40 @@ try:
 
                 with col_c3:
                     if st.button("❌ ELIMINA ASSEGNO SELEZIONATO", key="btn_elimina_assegno_manuale", use_container_width=True):
-                        stringa_pialla = None
-                        if assegni_scelti_da_versare: stringa_pialla = assegni_scelti_da_versare[0]
-                        elif assegno_scelto_da_ripristinare != "- Seleziona un assegno versato per correggerlo -": stringa_pialla = assegno_scelto_da_ripristinare
-                        if not stringa_pialla: st.warning("⚠️ Evidenzia o seleziona un assegno dai campi sopra!")
+                        indici_da_piallare = []
+                        
+                        # 🎯 LOGICA CANCELLAZIONE MASSIVA: Raccoglie tutti gli indici spuntati nel multiselect
+                        if assegni_scelti_da_versare:
+                            for stringa_scelta in assegni_scelti_da_versare:
+                                indici_da_piallare.append(mappa_global_indici[stringa_scelta])
+                        elif assegno_scelto_da_ripristinare != "- Seleziona un assegno versato per correggerlo -":
+                            indici_da_piallare.append(mappa_global_indici[assegno_scelto_da_ripristinare])
+                            
+                        if not indici_da_piallare: 
+                            st.warning("⚠️ Evidenzia o spunta gli assegni dai campi sopra per poterli eliminare!")
                         else:
-                            idx_target = mappa_global_indici[stringa_pialla]
-                            df_visualizza_completo = df_visualizza_completo.drop(idx_target).reset_index(drop=True)
+                            # 🎯 ELIMINAZIONE CHIRURGICA: Rimuove i record dall'Excel in un solo colpo e resetta l'indice
+                            df_visualizza_completo = df_visualizza_completo.drop(indici_da_piallare).reset_index(drop=True)
+                            
                             output_f = io.BytesIO()
-                            with pd.ExcelWriter(output_f, engine='openpyxl') as wr: df_visualizza_completo.to_excel(wr, index=False)
-                            payload_adm = {"message": f"❌ Eliminazione Assegno ID {idx_target}", "content": base64.b64encode(output_f.getvalue()).decode('utf-8'), "branch": "main", "sha": dati_j.get("sha", "")}
-                            requests.put(URL_TABELLONE_API, json=payload_adm, headers=headers_git_tabella, timeout=15)
-                            st.success("🗑️ ASSEGNO ELIMINATO DAL FILE EXCEL!"); time.sleep(1.2); st.rerun()
+                            with pd.ExcelWriter(output_f, engine='openpyxl') as wr: 
+                                df_visualizza_completo.to_excel(wr, index=False)
+                            
+                            payload_adm = {
+                                "message": f"❌ Eliminazione Massiva di {len(indici_da_piallare)} Assegni effettuata da Ufficio", 
+                                "content": base64.b64encode(output_f.getvalue()).decode('utf-8'), 
+                                "branch": "main", 
+                                "sha": dati_j.get("sha", "")
+                            }
+                            
+                            with st.spinner("🗑️ Rimozione in corso dal file Excel centralizzato..."):
+                                res_put_del = requests.put(URL_TABELLONE_API, json=payload_adm, headers=headers_git_tabella, timeout=15)
+                                if res_put_del.status_code == 200 or res_put_del.status_code == 201:
+                                    st.success(f"🗑️ ELIMINAZIONE COMPLETATA! Rimossi con successo {len(indici_da_piallare)} titoli dal file Excel centralizzato!")
+                                    time.sleep(1.2)
+                                    st.rerun()
+                                else:
+                                    st.error(f"❌ Errore durante l'eliminazione su GitHub. Codice: {res_put_del.status_code}")
         else: st.info("ℹ️ Registro vuoto su GitHub.")
     elif res_v.status_code == 404: st.info("ℹ️ Registro vuoto su GitHub.")
     else: st.warning(f"⚠️ Impossibile accedere al Cloud. HTTP {res_v.status_code}")
