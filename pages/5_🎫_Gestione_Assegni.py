@@ -197,7 +197,7 @@ with st.container(border=True):
     locale_scelto = st.selectbox("Seleziona il locale di riferimento:", lista_locali, index=0, key=f"loc_box_{st.session_state.contatore_grafico_reset}")
     st.markdown("---")
     
-    # Caricatore unico universale
+    # Unico uploader integrato per immagini e PDF
     file_assegno = st.file_uploader("📸 Scatta, inserisci la foto o il PDF dell'assegno:", type=["pdf", "jpg", "jpeg", "png"], key=f"f_up_{st.session_state.contatore_grafico_reset}")
 
     if file_assegno is None:
@@ -210,64 +210,46 @@ with st.container(border=True):
                 nome_file_grezzo = file_assegno.name.lower()
                 buffer_leggero = io.BytesIO()
                 
-                # Legge i byte in modo nativo così digerisce sia i PDF da PC che gli scatti enormi da telefono
-                file_bytes = file_assegno.read()
-                stream_grezzo = io.BytesIO(file_bytes)
+                # 🎯 BLINDATURA CODA: Resetta lo stream del file per sbloccare la fotocamera dello smartphone
+                file_assegno.seek(0)
                 
-                # Convertitore PDF -> Immagine integrato in RAM (Selezionabile da PC fisso)
+                # Convertitore PDF -> Immagine integrato in RAM
                 if nome_file_grezzo.endswith(".pdf"):
                     import pypdfium2 as pdfium
-                    documento_pdf = pdfium.PdfDocument(stream_grezzo)
-                    prima_pagina = documento_pdf
+                    documento_pdf = pdfium.PdfDocument(file_assegno)
+                    prima_pagina = documento_pdf[0]
                     bitmap_grezza = prima_pagina.render(scale=2)
                     immagine_renderizzata = bitmap_grezza.to_pil()
                     immagine_renderizzata.convert("RGB").save(buffer_leggero, format="JPEG", quality=75)
                     documento_pdf.close()
                 else:
-                    # Compressore di sicurezza anti-timeout per smartphone e fotocamere
-                    img_originale = Image.open(stream_grezzo)
-                    img_originale.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
-                    img_originale.convert("RGB").save(buffer_leggero, format="JPEG", quality=70)
+                    img_originale = Image.open(file_assegno)
+                    img_originale.thumbnail((800, 800))
+                    img_originale.convert("RGB").save(buffer_leggero, format="JPEG", quality=65)
                 
                 st.image(buffer_leggero, caption="Documento scansionato e compresso in RAM", width=350)
                 
-                # 🎯 STRATEGIA DI RECUPERO CHIAVE CERTIFICATA PER PC E TELEFONI
-                api_key_google = ""
-                if "gemini" in st.secrets:
-                    if "api_key" in st.secrets["gemini"]:
-                        api_key_google = str(st.secrets["gemini"]["api_key"]).strip()
-                    elif "api_key_google" in st.secrets["gemini"]:
-                        api_key_google = str(st.secrets["gemini"]["api_key_google"]).strip()
+                api_key_grezza = str(st.secrets["gemini"]["api_key"]).strip()
+                match_chiave_pulita = re.search(r'(AIzaSy[A-Za-z0-9_\-]+)', api_key_grezza)
+                api_key_google = match_chiave_pulita.group(1) if match_chiave_pulita else api_key_grezza
                 
-                if not api_key_google and "api_key" in st.secrets:
-                    api_key_google = str(st.secrets["api_key"]).strip()
-                elif not api_key_google and "gemini_api_key" in st.secrets:
-                    api_key_google = str(st.secrets["gemini_api_key"]).strip()
-
-                match_chiave_pulita = re.search(r'(AIzaSy[A-Za-z0-9_\-]+)', api_key_google)
-                if match_chiave_pulita:
-                    api_key_google = match_chiave_pulita.group(1)
-
-                from google import genai
-                client = genai.Client(api_key=api_key_google)
+                # 🎯 REGOLE DI IMPORTAZIONE NATIVE (ANTI-PORTABILITY CRASH PYTHON 3.14)
+                import google.generativeai as generativeai
+                generativeai.configure(api_key=api_key_google)
                 
                 buffer_leggero.seek(0)
                 immagine_pil = Image.open(buffer_leggero)
                 
                 prompt_ia = "Estrai dall'assegno solo il NUMERO dell'assegno, l'IMPORTO numerico contabile e la DATA di emissione. Rispondi scrivendo unicamente i tre valori puliti separati da un trattino con spazi prima e dopo, seguendo tassativamente questo esempio: 00904 - 1250.00 - 09/10/2026"
                 
+                # Sfrutta il canale di fallback automatico sulle librerie stabili di Google
                 try:
-                    risposta = client.models.generate_content(model='gemini-3.5-flash-lite', contents=[immagine_pil, prompt_ia])
+                    risposta = generativeai.GenerativeModel('gemini-1.5-flash-latest').generate_content([immagine_pil, prompt_ia])
                     st.session_state.testo_spia_generato = str(risposta.text).strip()
                 except Exception:
-                    try:
-                        risposta = client.models.generate_content(model='gemini-3.5-flash', contents=[immagine_pil, prompt_ia])
-                        st.session_state.testo_spia_generato = str(risposta.text).strip()
-                    except Exception:
-                        risposta = client.models.generate_content(model='gemini-3.6-flash', contents=[immagine_pil, prompt_ia])
-                        st.session_state.testo_spia_generato = str(risposta.text).strip()
+                    risposta = generativeai.GenerativeModel('gemini-1.5-flash').generate_content([immagine_pil, prompt_ia])
+                    st.session_state.testo_spia_generato = str(risposta.text).strip()
 
-                # 🎯 CORREZIONE CRITICA: Sostituito il walrus operator := con un controllo standard sicuro
                 if st.session_state.testo_spia_generato:
                     parti_estratte = st.session_state.testo_spia_generato.split(" - ")
                     if len(parti_estratte) >= 3:
@@ -275,9 +257,11 @@ with st.container(border=True):
                         for blocco_testo in parti_estratte:
                             stringa_pulita = str(blocco_testo).strip()
                             
+                            # 🎯 COORDINAMENTO CHIAVI: Iniezione diretta nei widget dinamici correnti
                             if posizione_indice == 0:
                                 st.session_state.val_num_ass = stringa_pulita
                                 st.session_state[f"num_ass_widget_{st.session_state.contatore_grafico_reset}"] = stringa_pulita
+                            
                             elif posizione_indice == 1:
                                 try:
                                     stringa_no_migliaia = stringa_pulita.replace(".", "")
@@ -286,9 +270,11 @@ with st.container(border=True):
                                         val_float = float(stringa_pulita.replace(",", ""))
                                     else:
                                         val_float = float(stringa_decimale_corretta)
+                                        
                                     st.session_state.val_imp_ass = val_float
                                     st.session_state[f"imp_ass_widget_{st.session_state.contatore_grafico_reset}"] = val_float
                                 except: pass
+                            
                             elif posizione_indice == 2:
                                 try:
                                     formato_standard = stringa_pulita.replace("-", "/").replace(".", "/")
@@ -308,7 +294,6 @@ with st.container(border=True):
         st.markdown("### 🔬 Dati Rilevati in tempo reale dall'IA di Google:")
         st.code(st.session_state.testo_spia_generato, language="text")
         st.warning("⚠️ **CONTROLLO OBBLIGATORIO:** Verifica l'esattezza del Numero, dell'Importo e della Data nelle caselle sottostanti prima di cliccare sul pulsante di invio blindato!")
-
 
 
 
