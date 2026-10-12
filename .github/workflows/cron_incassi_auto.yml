@@ -1,37 +1,44 @@
-name: Robot Estrazione e Invio Automatico Incassi WinGaming
-
+name: "📊 Estrazione Ricorrente Report Incassi - WinGaming"
 on:
+  workflow_dispatch:
   schedule:
-    # 🎯 MARTEDÌ MATTINA ALLE 08:00 ITALIANE (06:00 UTC) - Minuto 10 per load balancing
-    - cron: '10 6 * * 2'
-    # 🎯 VENERDÌ POMERIGGIO ALLE 15:00 ITALIANE (13:00 UTC) - Minuto 10 per load balancing
-    - cron: '10 13 * * 5'
-
+    - cron: '12 8 * * 2'
+    - cron: '12 12 * * 5'
+permissions:
+  contents: write
+  actions: read
 jobs:
   run-auto-incassi:
     runs-on: ubuntu-latest
     steps:
       - name: 📂 Clonazione repository
         uses: actions/checkout@v4
-
       - name: 🐍 Configurazione Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
-      - name: 📦 Installazione librerie e Chrome binari
+      - name: 📦 Installazione dipendenze
         run: |
-          pip install playwright requests openpyxl pandas lxml
+          pip install playwright requests openpyxl pandas lxml streamlit
           playwright install chromium
-
-      - name: 🚀 Esecuzione Robot Incassi Isolato
+      - name: 🚀 Esecuzione Robot Incassi
         env:
           GAMESLODI_EMAIL: "manuela.arigoni@wingaming.it"
           GAMESLODI_PASSWORD: ${{ secrets.GAMESLODI_PASSWORD }}
           TOKEN_ACCESSO_GITHUB: ${{ secrets.TOKEN_ACCESSO_GITHUB }}
         run: python robot_incassi.py
-
-      - name: 📦 Archivia gli Screenshot di Controllo Reali nelle Artifacts
+      - name: 💾 Salvataggio File Excel su Repository
+        run: |
+          git config --global user.name "WinGaming Robot"
+          git config --global user.email "manuela.arigoni@wingaming.it"
+          git add locali_non_incassati.xlsx
+          # 🎯 BLINDATURA DI FORCE PUSH: Garantisce la sovrascrittura dell'Excel ad orario programmato
+          git diff --quiet && git diff --staged --quiet || (git commit -m "⏱️ Sincro Automatica" && git push --force origin main)
+      - name: ✉️ Invio Report Mail Automatico ai Tecnici (Canale Cron)
+        env:
+          GITHUB_ACTIONS: "true"
+        run: python pages/4_📊_Report_Incassi.py
+      - name: 📦 Archivia Screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
