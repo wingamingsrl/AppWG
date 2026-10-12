@@ -420,7 +420,7 @@ with col_btn1:
                             msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
                             
                             corpo_html = f"""<html><body style='font-family: Arial, sans-serif;'>
-                                <p>Buongiorno Manuela,</p>
+                                <p>Buongiorno,</p>
                                 <p>Un nuovo assegno è stato acquisito digitalmente:</p>
                                 <ul>
                                     <li><b>Locale:</b> {locale_scelto}</li>
@@ -429,7 +429,7 @@ with col_btn1:
                                     <li><b>Importo:</b> {float(importo_assegno):,.2f} €</li>
                                     <li><b>Data Emissione:</b> {data_assegno.strftime("%d/%m/%Y")}</li>
                                 </ul>
-                                <p>In allegato alla presente mail troci l'immagine o il file PDF originale caricato.</p>
+                                <p>In allegato alla presente mail trovi l'immagine o il file PDF originale caricato.</p>
                                 </body></html>"""
                             msg.attach(MIMEText(corpo_html, 'html'))
                             
