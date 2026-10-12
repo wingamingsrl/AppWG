@@ -31,7 +31,7 @@ jobs:
         from playwright.sync_api import sync_playwright
         
         # 🎯 ELENCO PULITO ED ALLINEATO
-        progetti = ['appgestwg', 'sistema-ferie', 'appwg-test']
+        progetti = ['appwgest', 'sistema-ferie', 'appwg-test']
         
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
