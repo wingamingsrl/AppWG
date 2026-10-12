@@ -324,4 +324,4 @@ if file_realmente_valido and not df_pulito_globale.empty:
                 
     except Exception as e_main: st.error(f"Errore caricamento griglia contabile: {str(e_main)}")
 else: 
-    st.info("⏳ Il registro dei locali non incassati è in attesa dei dati reali da Sansone. Premi il pulsante in cima 'AVVIA ESTRAZIONE INCASSI DA SANSONE' per caricare la griglia!")NE INCASSI DA SANSONE' per caricare la griglia!")
+    st.info("⏳ Il registro dei locali non incassati è in attesa dei dati reali da Sansone. Premi il pulsante in ci
