@@ -244,11 +244,15 @@ with st.container(border=True):
                 
                 # Sfrutta il canale di fallback automatico sulle librerie stabili di Google
                 try:
-                    risposta = generativeai.GenerativeModel('gemini-1.5-flash-latest').generate_content([immagine_pil, prompt_ia])
+                    risposta = client.models.generate_content(model='gemini-3.5-flash-lite', contents=[immagine_pil, prompt_ia])
                     st.session_state.testo_spia_generato = str(risposta.text).strip()
                 except Exception:
-                    risposta = generativeai.GenerativeModel('gemini-1.5-flash').generate_content([immagine_pil, prompt_ia])
-                    st.session_state.testo_spia_generato = str(risposta.text).strip()
+                    try:
+                        risposta = client.models.generate_content(model='gemini-3.5-flash', contents=[immagine_pil, prompt_ia])
+                        st.session_state.testo_spia_generato = str(risposta.text).strip()
+                    except Exception:
+                        risposta = client.models.generate_content(model='gemini-3.6-flash', contents=[immagine_pil, prompt_ia])
+                        st.session_state.testo_spia_generato = str(risposta.text).strip()
 
                 if st.session_state.testo_spia_generato:
                     parti_estratte = st.session_state.testo_spia_generato.split(" - ")
