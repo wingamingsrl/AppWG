@@ -190,6 +190,9 @@ if "testo_spia_generato" not in st.session_state:
 # =====================================================================================
 # 🧱 [BLOCCO 1 di 2]: ENGINE IA UNIVERSALE — PROTETTO PER PC FIssi E SMARTPHONE
 # =====================================================================================
+# =====================================================================================
+# 🧱 [BLOCCO 1 di 2]: ENGINE IA UNIVERSALE — PROTETTO PER PC FISSI E SMARTPHONE
+# =====================================================================================
 with st.container(border=True):
     locale_scelto = st.selectbox("Seleziona il locale di riferimento:", lista_locali, index=0, key=f"loc_box_{st.session_state.contatore_grafico_reset}")
     st.markdown("---")
@@ -211,7 +214,7 @@ with st.container(border=True):
                 file_bytes = file_assegno.read()
                 stream_grezzo = io.BytesIO(file_bytes)
                 
-                # Convertitore PDF -> Immagine integrato in RAM (Ottimizzato per PC)
+                # Convertitore PDF -> Immagine integrato in RAM (Selezionabile da PC fisso)
                 if nome_file_grezzo.endswith(".pdf"):
                     import pypdfium2 as pdfium
                     documento_pdf = pdfium.PdfDocument(stream_grezzo)
@@ -264,7 +267,8 @@ with st.container(border=True):
                         risposta = client.models.generate_content(model='gemini-3.6-flash', contents=[immagine_pil, prompt_ia])
                         st.session_state.testo_spia_generato = str(risposta.text).strip()
 
-                if st.session_state.testo_spia_generated := st.session_state.testo_spia_generato:
+                # 🎯 CORREZIONE CRITICA: Sostituito il walrus operator := con un controllo standard sicuro
+                if st.session_state.testo_spia_generato:
                     parti_estratte = st.session_state.testo_spia_generato.split(" - ")
                     if len(parti_estratte) >= 3:
                         posizione_indice = 0
