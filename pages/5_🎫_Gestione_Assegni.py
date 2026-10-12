@@ -234,8 +234,11 @@ with st.container(border=True):
                 api_key_google = match_chiave_pulita.group(1) if match_chiave_pulita else api_key_grezza
                 
                 # 🎯 REGOLE DI IMPORTAZIONE NATIVE (ANTI-PORTABILITY CRASH PYTHON 3.14)
-                import google.generativeai as generativeai
-                generativeai.configure(api_key=api_key_google)
+                #import google.generativeai as generativeai
+                #generativeai.configure(api_key=api_key_google)
+
+                from google import genai
+                client = genai.Client(api_key=api_key_google)
                 
                 buffer_leggero.seek(0)
                 immagine_pil = Image.open(buffer_leggero)
