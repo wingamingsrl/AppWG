@@ -4,3 +4,10 @@ openpyxl
 pandas
 lxml
 pyotp
+pytesseract
+pdf2image
+google-generativeai
+google-genai
+pytesseract
+pillow
+pypdfium2
