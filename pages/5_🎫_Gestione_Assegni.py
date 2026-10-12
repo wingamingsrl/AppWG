@@ -188,13 +188,13 @@ if "testo_spia_generato" not in st.session_state:
 # =====================================================================================
 
 # =====================================================================================
-# 🧱 [BLOCCO 1 di 2]: ENGINE IA UNIFICATO IMMAGINI + PDF (ALLINEATO AL RESET GRAFICO)
+# 🧱 [BLOCCO 1 di 2]: ENGINE IA INTEGRATO — BLINDATURA SCATTO FOTO IN DIRETTA
 # =====================================================================================
 with st.container(border=True):
     locale_scelto = st.selectbox("Seleziona il locale di riferimento:", lista_locali, index=0, key=f"loc_box_{st.session_state.contatore_grafico_reset}")
     st.markdown("---")
     
-    # Unico uploader integrato per immagini e PDF
+    # Caricatore unico unificato per PDF, immagini da galleria e scatti in tempo reale
     file_assegno = st.file_uploader("📸 Scatta, inserisci la foto o il PDF dell'assegno:", type=["pdf", "jpg", "jpeg", "png"], key=f"f_up_{st.session_state.contatore_grafico_reset}")
 
     if file_assegno is None:
@@ -207,20 +207,31 @@ with st.container(border=True):
                 nome_file_grezzo = file_assegno.name.lower()
                 buffer_leggero = io.BytesIO()
                 
-                # Convertitore PDF -> Immagine integrato in RAM
+                # 🎯 BI-PASS FOTOCAMERA: Legge i byte grezzi del file per evitare il blocco del browser
+                file_bytes = file_assegno.read()
+                stream_grezzo = io.BytesIO(file_bytes)
+                
+                # Motore di conversione PDF -> Immagine integrato in RAM
                 if nome_file_grezzo.endswith(".pdf"):
                     import pypdfium2 as pdfium
-                    documento_pdf = pdfium.PdfDocument(file_assegno)
-                    prima_pagina = documento_pdf[0]
+                    documento_pdf = pdfium.PdfDocument(stream_grezzo)
+                    prima_pagina = documento_pdf
                     bitmap_grezza = prima_pagina.render(scale=2)
                     immagine_renderizzata = bitmap_grezza.to_pil()
                     immagine_renderizzata.convert("RGB").save(buffer_leggero, format="JPEG", quality=75)
                     documento_pdf.close()
                 else:
-                    img_originale = Image.open(file_assegno)
-                    img_originale.thumbnail((600, 600))
-                    img_originale.convert("RGB").save(buffer_leggero, format="JPEG", quality=55)
+                    # 🎯 COMPRESSORE DI SICUREZZA: Apre la foto scattata in diretta (anche a 20 Megapixel)
+                    img_originale = Image.open(stream_grezzo)
+                    
+                    # Riduce le dimensioni massime a 1000px mantenendo le proporzioni
+                    # Questo rende lo scatto leggerissimo in RAM e fulmineo per l'IA di Google
+                    img_originale.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
+                    
+                    # Salva l'immagine compressa nel buffer
+                    img_originale.convert("RGB").save(buffer_leggero, format="JPEG", quality=70)
                 
+                # Mostra l'anteprima dell'assegno catturato dalla fotocamera
                 st.image(buffer_leggero, caption="Documento scansionato e compresso in RAM", width=350)
                 
                 api_key_grezza = str(st.secrets["gemini"]["api_key"]).strip()
@@ -253,14 +264,12 @@ with st.container(border=True):
                         for blocco_testo in parti_estratte:
                             stringa_pulita = str(blocco_testo).strip()
                             
-                            # 🎯 COORDINAMENTO CHIAVI: Iniezione diretta nei widget dinamici correnti
                             if posizione_indice == 0:
                                 st.session_state.val_num_ass = stringa_pulita
                                 st.session_state[f"num_ass_widget_{st.session_state.contatore_grafico_reset}"] = stringa_pulita
                             
                             elif posizione_indice == 1:
                                 try:
-                                    # Correzione chirurgica dei decimali
                                     stringa_no_migliaia = stringa_pulita.replace(".", "")
                                     stringa_decimale_corretta = stringa_no_migliaia.replace(",", ".")
                                     if "." in stringa_pulita and "," not in stringa_pulita:
@@ -295,10 +304,6 @@ with st.container(border=True):
 
 
 
-
-# =====================================================================================
-# 🧱 [BLOCCO 1 di 2]: CASELLE COMPILATE E REGISTRAZIONE RECORD CONTABILE
-# =====================================================================================
 # =====================================================================================
 # 🧱 LE 3 CASELLE DI TESTO ALLINEATE AL RESET GRAFICO ANTI-TRASCEINAMENTO
 # =====================================================================================
