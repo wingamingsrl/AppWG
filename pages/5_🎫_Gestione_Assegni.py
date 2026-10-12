@@ -188,13 +188,13 @@ if "testo_spia_generato" not in st.session_state:
 # =====================================================================================
 
 # =====================================================================================
-# 🧱 [BLOCCO 1 di 2]: ENGINE IA INTEGRATO — BLINDATURA SCATTO FOTO IN DIRETTA
+# 🧱 [BLOCCO 1 di 2]: ENGINE IA UNIVERSALE — PROTETTO PER PC FIssi E SMARTPHONE
 # =====================================================================================
 with st.container(border=True):
     locale_scelto = st.selectbox("Seleziona il locale di riferimento:", lista_locali, index=0, key=f"loc_box_{st.session_state.contatore_grafico_reset}")
     st.markdown("---")
     
-    # Caricatore unico unificato per PDF, immagini da galleria e scatti in tempo reale
+    # Caricatore unico universale
     file_assegno = st.file_uploader("📸 Scatta, inserisci la foto o il PDF dell'assegno:", type=["pdf", "jpg", "jpeg", "png"], key=f"f_up_{st.session_state.contatore_grafico_reset}")
 
     if file_assegno is None:
@@ -207,11 +207,11 @@ with st.container(border=True):
                 nome_file_grezzo = file_assegno.name.lower()
                 buffer_leggero = io.BytesIO()
                 
-                # 🎯 BI-PASS FOTOCAMERA: Legge i byte grezzi del file per evitare il blocco del browser
+                # Legge i byte in modo nativo così digerisce sia i PDF da PC che gli scatti enormi da telefono
                 file_bytes = file_assegno.read()
                 stream_grezzo = io.BytesIO(file_bytes)
                 
-                # Motore di conversione PDF -> Immagine integrato in RAM
+                # Convertitore PDF -> Immagine integrato in RAM (Ottimizzato per PC)
                 if nome_file_grezzo.endswith(".pdf"):
                     import pypdfium2 as pdfium
                     documento_pdf = pdfium.PdfDocument(stream_grezzo)
@@ -221,23 +221,30 @@ with st.container(border=True):
                     immagine_renderizzata.convert("RGB").save(buffer_leggero, format="JPEG", quality=75)
                     documento_pdf.close()
                 else:
-                    # 🎯 COMPRESSORE DI SICUREZZA: Apre la foto scattata in diretta (anche a 20 Megapixel)
+                    # Compressore di sicurezza anti-timeout per smartphone e fotocamere
                     img_originale = Image.open(stream_grezzo)
-                    
-                    # Riduce le dimensioni massime a 1000px mantenendo le proporzioni
-                    # Questo rende lo scatto leggerissimo in RAM e fulmineo per l'IA di Google
                     img_originale.thumbnail((1000, 1000), Image.Resampling.LANCZOS)
-                    
-                    # Salva l'immagine compressa nel buffer
                     img_originale.convert("RGB").save(buffer_leggero, format="JPEG", quality=70)
                 
-                # Mostra l'anteprima dell'assegno catturato dalla fotocamera
                 st.image(buffer_leggero, caption="Documento scansionato e compresso in RAM", width=350)
                 
-                api_key_grezza = str(st.secrets["gemini"]["api_key"]).strip()
-                match_chiave_pulita = re.search(r'(AIzaSy[A-Za-z0-9_\-]+)', api_key_grezza)
-                api_key_google = match_chiave_pulita.group(1) if match_chiave_pulita else api_key_grezza
+                # 🎯 STRATEGIA DI RECUPERO CHIAVE CERTIFICATA PER PC E TELEFONI
+                api_key_google = ""
+                if "gemini" in st.secrets:
+                    if "api_key" in st.secrets["gemini"]:
+                        api_key_google = str(st.secrets["gemini"]["api_key"]).strip()
+                    elif "api_key_google" in st.secrets["gemini"]:
+                        api_key_google = str(st.secrets["gemini"]["api_key_google"]).strip()
                 
+                if not api_key_google and "api_key" in st.secrets:
+                    api_key_google = str(st.secrets["api_key"]).strip()
+                elif not api_key_google and "gemini_api_key" in st.secrets:
+                    api_key_google = str(st.secrets["gemini_api_key"]).strip()
+
+                match_chiave_pulita = re.search(r'(AIzaSy[A-Za-z0-9_\-]+)', api_key_google)
+                if match_chiave_pulita:
+                    api_key_google = match_chiave_pulita.group(1)
+
                 from google import genai
                 client = genai.Client(api_key=api_key_google)
                 
@@ -257,7 +264,7 @@ with st.container(border=True):
                         risposta = client.models.generate_content(model='gemini-3.6-flash', contents=[immagine_pil, prompt_ia])
                         st.session_state.testo_spia_generato = str(risposta.text).strip()
 
-                if st.session_state.testo_spia_generato:
+                if st.session_state.testo_spia_generated := st.session_state.testo_spia_generato:
                     parti_estratte = st.session_state.testo_spia_generato.split(" - ")
                     if len(parti_estratte) >= 3:
                         posizione_indice = 0
@@ -267,7 +274,6 @@ with st.container(border=True):
                             if posizione_indice == 0:
                                 st.session_state.val_num_ass = stringa_pulita
                                 st.session_state[f"num_ass_widget_{st.session_state.contatore_grafico_reset}"] = stringa_pulita
-                            
                             elif posizione_indice == 1:
                                 try:
                                     stringa_no_migliaia = stringa_pulita.replace(".", "")
@@ -276,11 +282,9 @@ with st.container(border=True):
                                         val_float = float(stringa_pulita.replace(",", ""))
                                     else:
                                         val_float = float(stringa_decimale_corretta)
-                                        
                                     st.session_state.val_imp_ass = val_float
                                     st.session_state[f"imp_ass_widget_{st.session_state.contatore_grafico_reset}"] = val_float
                                 except: pass
-                            
                             elif posizione_indice == 2:
                                 try:
                                     formato_standard = stringa_pulita.replace("-", "/").replace(".", "/")
