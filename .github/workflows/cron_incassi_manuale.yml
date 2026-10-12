@@ -1,40 +1,41 @@
 name: Robot Estrazione Incassi Manuale
-
 on:
   repository_dispatch:
     types: [avvia_robot_incassi]
-  workflow_dispatch: # Telecomando puro attivabile solo a comando dallo schermo
-
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: read
 jobs:
   run-download-incassi:
     runs-on: ubuntu-latest
     steps:
       - name: 📂 Clonazione repository
         uses: actions/checkout@v4
-
       - name: 🐍 Configurazione Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11" # Forza l'ambiente stabile di Python 3.11
-
-      - name: 📦 Installazione librerie e Chrome binari
+          python-version: "3.11"
+      - name: 📦 Installazione dipendenze
         run: |
-          pip install playwright requests openpyxl pandas lxml
-          playwright install chromium # 👈 Scarica Chromium prima che parta lo script!
-
-      - name: 🚀 Esecuzione Robot Incassi Isolato
+          pip install playwright requests openpyxl pandas lxml streamlit
+          playwright install chromium
+      - name: 🚀 Esecuzione Robot Incassi
         env:
           GAMESLODI_EMAIL: "manuela.arigoni@wingaming.it"
           GAMESLODI_PASSWORD: ${{ secrets.GAMESLODI_PASSWORD }}
-          # 🎯 VITTORIA: Agganciato il Secret maiuscolo ufficiale che sblocca il magazzino!
           TOKEN_ACCESSO_GITHUB: ${{ secrets.TOKEN_ACCESSO_GITHUB }}
         run: python robot_incassi.py
-
-      # 🎯 Archiviazione foto in Artifacts
-      - name: 📦 Archivia gli Screenshot di Controllo Reali nelle Artifacts
-        if: always() # Salva lo zip anche se il robot dovesse andare in errore
+      - name: 💾 Salvataggio File Excel su Repository
+        run: |
+          git config --global user.name "WinGaming Robot"
+          git config --global user.email "manuela.arigoni@wingaming.it"
+          git add locali_non_incassati.xlsx
+          git diff --quiet && git diff --staged --quiet || (git commit -m "🚀 Sincro Manuale" && git pull --rebase origin main && git push)
+      - name: 📦 Archivia Screenshot
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: foto-controllo-robot-incassi
           path: /tmp/*.png
-          retention-days: 2 # Tiene in memoria lo zip per 48 ore senza intasare il server
+          retention-days: 2
