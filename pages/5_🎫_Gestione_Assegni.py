@@ -447,25 +447,25 @@ with col_btn1:
 
 with col_btn2:
     if st.button("🗑️ AZZERA CAMPI", key="btn_azzeramento_campi_assegno", use_container_width=True):
+        # 🎯 CORREZIONE CHIRURGICA: Forza la rigenerazione totale dei widget a schermo
+        st.session_state.contatore_grafico_reset += 1
+        
+        # Svuotiamo le variabili di riempimento dell'assegno nella RAM di sessione
         st.session_state.val_num_ass = ""
         st.session_state.val_imp_ass = 0.0
         st.session_state.val_dat_ass = datetime.now().date()
         st.session_state.val_dat_inc = datetime.now().date()
         
-        # Svuotiamo l'immagine dall'uploader senza toccare il contatore dei locali
+        # Eliminiamo la foto caricata nell'uploader temporaneo senza toccare l'anagrafica locali
         if f"f_up_{st.session_state.contatore_grafico_reset}" in st.session_state:
             del st.session_state[f"f_up_{st.session_state.contatore_grafico_reset}"]
         
-        # Eliminiamo le chiavi di memoria in RAM dei widget di testo dell'assegno
-        if "campo_fisso_numero_assegno_ia" in st.session_state: del st.session_state["campo_fisso_numero_assegno_ia"]
-        if "campo_fisso_importo_assegno_ia" in st.session_state: del st.session_state["campo_fisso_importo_assegno_ia"]
-        if "campo_fisso_data_assegno_ia" in st.session_state: del st.session_state["campo_fisso_data_assegno_ia"]
-        
-        # Resettiamo lo stato dell'elaborazione IA per consentire un nuovo caricamento file
+        # Resettiamo lo stato dell'elaborazione dell'IA di Google per nuovi inserimenti
         st.session_state.ia_elaborata = False
         st.session_state.testo_spia_generato = ""
         
-        # Eseguiamo il rerun: i campi testo e la foto si azzerano, ma la tabella rimane visibile!
+        st.toast("🧹 Campi piallati con successo!")
+        time.sleep(0.4)
         st.rerun()
 
 
