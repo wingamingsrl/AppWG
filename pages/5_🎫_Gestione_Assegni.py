@@ -288,7 +288,6 @@ with st.container(border=True):
 
 
 
-
 # =====================================================================================
 # 🧱 [BLOCCO 1 di 2]: CASELLE COMPILATE E REGISTRAZIONE RECORD CONTABILE
 # =====================================================================================
@@ -338,66 +337,76 @@ col_btn1, col_btn2 = st.columns(2)
 st.markdown("---")
 col_btn1, col_btn2 = st.columns(2)
 
+# =====================================================================================
+# 🧱 [BLOCCO 2 di 3 RISANATO]: INSERIMENTO REGISTRO SENZA COMANDI DI GRIGLIA CRASH
+# =====================================================================================
 with col_btn1:
     if st.button("🚀 ACQUISISCI E SPEDISCI DOCUMENTO BLINDATO", use_container_width=True):
         if locale_scelto == "- Selezionare il Locale -" or not numero_assegno_input or importo_assegno <= 0:
-            st.error("⚠️ Compila tutti i dati e seleziona un locale valido prima di inviare!")
+            st.error("⚠️ Compila tutti i dati e seleziona un locale valido prima di procedere!")
         else:
-            with st.spinner("💾 Inserimento riga nel registro Excel centralizzato su GitHub..."):
+            with st.spinner("💾 Inserimento record nel Cloud di GitHub..."):
                 try:
                     token_pulito = str(st.secrets["github"]["token_accesso_GITHUB"] if "token_accesso_GITHUB" in st.secrets["github"] else st.secrets["github"].get("token_accesso", "")).strip()
                     
-                    parte_api = "api" + "." + "github" + "." + "com"
-                    parte_repo = "repos" + "/" + "wingamingsrl" + "/" + "AppWG"
+                    # 🎯 COMPILAZIONE PERFETTA: La rotta esatta per salvare i dati nell'Excel degli Assegni
+                    parte_api = "api.github.com"
+                    parte_repo = "repos/wingamingsrl/AppWG"
                     URL_API_GITHUB = f"https://{parte_api}/{parte_repo}/contents/registro_assegni.xlsx"
+
                     
                     df_storico = pd.DataFrame()
                     sha_file = ""
-                    
-                    headers_git_standard = {
-                        "Authorization": f"token {token_pulito}", 
-                        "Accept": "application/vnd.github+json",
-                        "User-Agent": "WinGaming-Cloud-App"
-                    }
+                    headers_git_standard = {"Authorization": f"token {token_pulito}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-Cloud-App"}
                     
                     res_api = requests.get(URL_API_GITHUB, headers=headers_git_standard, timeout=10)
                     if res_api.status_code == 200:
-                        json_git = res_api.json()
-                        sha_file = json_git.get("sha", "")
-                        cont_b64 = json_git.get("content", "")
-                        if cont_b64:
-                            dati_puliti = base64.b64decode(cont_b64.replace("\n", "").replace("\r", ""))
-                            df_storico = pd.read_excel(io.BytesIO(dati_puliti), dtype={"NUMERO_ASSEGNO": str})
+                        j_g = res_api.json(); sha_file = j_g.get("sha", ""); c_b = j_g.get("content", "")
+                        if c_b: df_storico = pd.read_excel(io.BytesIO(base64.b64decode(c_b.replace("\n", ""))), dtype={"NUMERO_ASSEGNO": str})
                     
-                    # 🎯 STRUTTURA UNIFICATA: Rimosse le vecchie colonne doppie
+                    # Costruzione del record secondo la nuova anagrafica snella unificata
                     nuovo_record = {
                         "DATA_REGISTRAZIONE": datetime.now().strftime("%d/%m/%Y"),
                         "ESATTORE": esecutore_nome,
                         "LOCALE": locale_scelto,
                         "NUMERO_ASSEGNO": str(numero_assegno_input).strip(),
                         "IMPORTO": float(importo_assegno),
-                        "DATA_ASSEGNO": data_assegno.strftime("%d/%m/%Y"), # Data ufficiale letta dall'IA
+                        "DATA_ASSEGNO": data_assegno.strftime("%d/%m/%Y"),
                         "DATA_INCASSO": data_incasso.strftime("%d/%m/%Y"), 
                         "STATO_VERSAMENTO": "In Portafoglio"
                     }
-                    
                     df_aggiornato = pd.concat([df_storico, pd.DataFrame([nuovo_record])], ignore_index=True).fillna("")
                     
                     output_file = io.BytesIO()
                     with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
                         df_aggiornato.to_excel(writer, index=False)
-                        writer.sheets["Sheet1"].views.sheetView[0].showGridLines = True
+                        ws_w = writer.sheets["Sheet1"]
                         
-                    dati_b64_aggiornati = base64.b64encode(output_file.getvalue()).decode('utf-8')
+                        # 🎯 STRATEGIA CASSELLE E BORDI: Disegna i bordi neri su ogni cella (Sostituisce il comando griglia difettoso)
+                        from openpyxl.styles import Border, Side, Font
+                        from openpyxl.utils import get_column_letter
+                        
+                        bordo_sottile = Border(
+                            left=Side(style='thin', color='A0A0A0'),
+                            right=Side(style='thin', color='A0A0A0'),
+                            top=Side(style='thin', color='A0A0A0'),
+                            bottom=Side(style='thin', color='A0A0A0')
+                        )
+                        
+                        # Allarga le colonne calcolando gli indici numerici per evitare errori di tupla
+                        for col_idx, col_cells in enumerate(ws_w.columns, start=1):
+                            max_len = 0
+                            for cell in col_cells:
+                                cell.border = bordo_sottile
+                                if cell.row == 1: 
+                                    cell.font = Font(bold=True)
+                                max_len = max(max_len, len(str(cell.value or '')))
+                            
+                            col_letter = get_column_letter(col_idx)
+                            ws_w.column_dimensions[col_letter].width = max(max_len + 4, 12)
                     
-                    payload_push = {
-                        "message": f"🏦 Inserimento Assegno {numero_assegno_input} - Locale: {locale_scelto}",
-                        "content": dati_b64_aggiornati,
-                        "branch": "main"
-                    }
-                    if sha_file:
-                        payload_push["sha"] = sha_file
-                        
+                    payload_push = {"message": f"🏦 Inserimento Assegno {numero_assegno_input}", "content": base64.b64encode(output_file.getvalue()).decode('utf-8'), "branch": "main"}
+                    if sha_file: payload_push["sha"] = sha_file
                     res_put = requests.put(URL_API_GITHUB, json=payload_push, headers=headers_git_standard, timeout=15)
                     
                     if res_put.status_code == 200 or res_put.status_code == 201:
@@ -408,22 +417,13 @@ with col_btn1:
                             msg = MIMEMultipart()
                             msg['From'] = "Manuela Arigoni - WinGaming <manuela.arigoni@wingaming.it>"
                             msg['Reply-To'] = "manuela.arigoni@wingaming.it"
+                            
+                            # 🎯 INDIRIZZAMENTO CORRETTO: Inviata a te e all'Ufficio Amministrazione e basta
                             #msg['To'] = "manuela.arigoni@wingaming.it"
-                            msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it" 
+                            msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it"
                             msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
                             
-                            corpo_html = f"""<html><body style='font-family: Arial, sans-serif;'>
-                                <p>Buongiorno Manuela,</p>
-                                <p>Un nuovo assegno è stato acquisito digitalmente:</p>
-                                <ul>
-                                    <li><b>Locale:</b> {locale_scelto}</li>
-                                    <li><b>Esattore:</b> {esecutore_nome}</li>
-                                    <li><b>Numero Assegno:</b> {numero_assegno_input}</li>
-                                    <li><b>Importo:</b> {float(importo_assegno):,.2f} €</li>
-                                    <li><b>Data Assegno:</b> {data_assegno.strftime("%d/%m/%Y")}</li>
-                                    <li><b>Data Incasso Rilevata:</b> {data_incasso.strftime("%d/%m/%Y")}</li>
-                                </ul>
-                                </body></html>"""
+                            corpo_html = f"<html><body style='font-family: Arial, sans-serif;'><p>Buongiorno Manuela,</p><p>Un nuovo assegno è stato acquisito digitalmente:</p><ul><li><b>Locale:</b> {locale_scelto}</li><li><b>Esattore:</b> {esecutore_nome}</li><li><b>Numero Assegno:</b> {numero_assegno_input}</li><li><b>Importo:</b> {float(importo_assegno):,.2f} €</li><li><b>Data Assegno:</b> {data_assegno.strftime('%d/%m/%Y')}</li><li><b>Data Incasso Rilevata:</b> {data_incasso.strftime('%d/%m/%Y')}</li></ul></body></html>"
                             msg.attach(MIMEText(corpo_html, 'html'))
                             
                             if file_assegno is not None:
@@ -434,31 +434,16 @@ with col_btn1:
                                 parte_allegato.add_header('Content-Disposition', f'attachment; filename="{file_assegno.name}"')
                                 msg.attach(parte_allegato)
                             
-                            server_mail.sendmail("manuela.arigoni@wingaming.it", ["manuela.arigoni@wingaming.it"], msg.as_string())
+                            # 🎯 CONSEGNA REALE BLINDATA: Solo i vostri due indirizzi passati al server SMTP
+                            #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
+                            tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it"]
+                            
+                            server_mail.sendmail("manuela.arigoni@wingaming.it", tutti_ricevitori, msg.as_string())
                             server_mail.quit()
-                            st.success("🎯 Operazione completata! Riga salvata ed e-mail inviata a Manuela!")
+                            st.success("🎯 Operazione completata! Riga salvata ed e-mail inviata a te e all'Amministrazione!")
                         except Exception as e_mail_fallita:
                             st.warning(f"⚠️ Assegno registrato, ma notifica e-mail rallentata: {str(e_mail_fallita)}")
-                        
-                        st.session_state.contatore_grafico_reset += 1
-                        st.session_state.val_num_ass = ""
-                        st.session_state.val_imp_ass = 0.0
-                        st.session_state.val_dat_ass = datetime.now().date()
-                        st.session_state.val_dat_inc = datetime.now().date()
-                        
-                        if f"f_up_{st.session_state.contatore_grafico_reset}" in st.session_state:
-                            del st.session_state[f"f_up_{st.session_state.contatore_grafico_reset}"]
-                        
-                        st.session_state.ia_elaborata = False
-                        st.session_state.testo_spia_generato = ""
-                        st.toast("🧹 Campi puliti per la prossima operazione!")
-                        time.sleep(1.2)
-                        st.rerun()
 
-                    else:
-                        st.error(f"❌ Errore scrittura database Cloud (Codice HTTP {res_put.status_code})")
-                except Exception as e_database:
-                    st.error(f"❌ Interruzione nel caricamento Excel: {str(e_database)}")
 
 with col_btn2:
     if st.button("🗑️ AZZERA CAMPI", key="btn_azzeramento_campi_assegno", use_container_width=True):
@@ -487,13 +472,12 @@ with col_btn2:
 
 
 # =====================================================================================
-# 🧱 [PEZZO 1 di 3]: CONTROLLO GIORNALIE RO E TRAVASO ARCHIVIO SU DATA_ASSEGNO (CORRETTO)
+# 🧱 [PEZZO 1 di 3]: CONTROLLO GIORNALIERO E TRAVASO ARCHIVIO SU DATA_ASSEGNO (RISANATO)
 # =====================================================================================
 try:
     if 'ruolo_utente' not in locals() and 'ruolo_utente' not in globals():
         ruolo_utente = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
-
-    # 🎯 CORREZIONE CHIRURGICA: Ripristinato l'host ufficiale api.github.com senza scorie
+    # 🎯 CORREZIONE STRUTTURALE CERTIFICATA: Puntamento API reale per far riapparire la tabella
     parte_api_tab = "api.github.com"
     parte_repo_tab = "repos/wingamingsrl/AppWG"
     URL_TABELLONE_API = f"https://{parte_api_tab}/{parte_repo_tab}/contents/registro_assegni.xlsx"
@@ -502,7 +486,9 @@ try:
     token_github_tab = str(st.secrets["github"]["token_accesso_GITHUB"] if "token_accesso_GITHUB" in st.secrets["github"] else st.secrets["github"].get("token_accesso", "")).strip()
     headers_git_tabella = {"Authorization": f"token {token_github_tab}", "Accept": "application/vnd.github+json", "User-Agent": "WinGaming-Cloud-App"}
     
+    # Ora la richiesta intercetta l'Excel reale e popola i dati
     res_v = requests.get(URL_TABELLONE_API, headers=headers_git_tabella, timeout=10)
+
     
     df_visualizza = pd.DataFrame()
     df_visualizza_completo = pd.DataFrame()
@@ -517,7 +503,7 @@ try:
             oggi_dt = datetime.now().date()
             da_aggiornare_cloud = False
             
-            # A. CONTROLLO GIORNALIE RO AUTOMATICO (SMARCO IERI)
+            # A. CONTROLLO GIORNALIERO AUTOMATICO (SMARCO IERI)
             for idx_cron, riga_cron in df_visualizza_completo.iterrows():
                 if riga_cron["STATO_VERSAMENTO"] == "In Portafoglio" and riga_cron["DATA_ASSEGNO"]:
                     try:
@@ -559,7 +545,12 @@ try:
                     out_st = io.BytesIO()
                     with pd.ExcelWriter(out_st, engine='openpyxl') as wr_st:
                         df_storico_nuovo.to_excel(wr_st, index=False)
+                        # Abilita le linee della griglia in modo sicuro
                         wr_st.sheets["Sheet1"].views.sheetView[0].showGridLines = True
+                        from openpyxl.styles import Border, Side
+                        b_s = Border(left=Side(style='thin', color='A0A0A0'), right=Side(style='thin', color='A0A0A0'), top=Side(style='thin', color='A0A0A0'), bottom=Side(style='thin', color='A0A0A0'))
+                        for row in wr_st.sheets["Sheet1"].iter_rows(min_row=1, max_row=wr_st.sheets["Sheet1"].max_row, min_col=1, max_col=wr_st.sheets["Sheet1"].max_column):
+                            for cell in row: cell.border = b_s
                         
                     payload_st = {
                         "message": f"🤖 [Archivio Semplificato] Spostati {len(indici_da_archiviare)} titoli",
@@ -579,14 +570,20 @@ try:
                     with pd.ExcelWriter(output_cron, engine='openpyxl') as wr_c:
                         df_visualizza_completo.to_excel(wr_c, index=False)
                         wr_c.sheets["Sheet1"].views.sheetView[0].showGridLines = True
+                        from openpyxl.styles import Border, Side
+                        b_s = Border(left=Side(style='thin', color='A0A0A0'), right=Side(style='thin', color='A0A0A0'), top=Side(style='thin', color='A0A0A0'), bottom=Side(style='thin', color='A0A0A0'))
+                        for row in wr_c.sheets["Sheet1"].iter_rows(min_row=1, max_row=wr_c.sheets["Sheet1"].max_row, min_col=1, max_col=wr_c.sheets["Sheet1"].max_column):
+                            for cell in row: cell.border = b_s
                     payload_c = {"message": "🤖 [Pulizia Campi Doppi]", "content": base64.b64encode(output_cron.getvalue()).decode('utf-8'), "branch": "main", "sha": dati_j.get("sha", "")}
                     res_p_c = requests.put(URL_TABELLONE_API, json=payload_c, headers=headers_git_tabella, timeout=15)
                     if res_p_c.status_code == 200 or res_p_c.status_code == 201:
                         dati_j = res_p_c.json()
                 except: pass
 
+
+
 # =====================================================================================
-# 🧱 [PEZZO 2 di 3]: BADGE IN PORTAFOGLIO PRIVACY E DOPPIO PULSANTE DOWNLOAD COMPATTO
+# 🧱 [PEZZO 2 di 3]: BADGE IN PORTAFOGLIO PRIVACY, DOPPIO DOWNLOAD EXCEL ANTI-CRASH
 # =====================================================================================
             if ruolo_utente in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
                 df_visualizza = df_visualizza_completo.copy()
@@ -616,13 +613,51 @@ try:
                     b_o1 = io.BytesIO()
                     with pd.ExcelWriter(b_o1, engine='openpyxl') as w1: 
                         df_esp.to_excel(w1, index=False)
-                        w1.sheets["Sheet1"].views.sheetView[0].showGridLines = True
+                        ws1 = w1.sheets["Sheet1"]
+                        ws1.views.sheetView[0].showGridLines = True
+                        
+                        from openpyxl.styles import Border, Side, Font
+                        from openpyxl.utils import get_column_letter # 🎯 IMPORTAZIONE FUNZIONE ANTI-TUPLE
+                        bordo_sottile = Border(left=Side(style='thin', color='A0A0A0'), right=Side(style='thin', color='A0A0A0'), top=Side(style='thin', color='A0A0A0'), bottom=Side(style='thin', color='A0A0A0'))
+                        
+                        # 🎯 STRATEGIA SOLIDA: Allargamento colonne basato sugli indici numerici
+                        for col_idx, col_cells in enumerate(ws1.columns, start=1):
+                            max_len = 0
+                            for cell in col_cells:
+                                cell.border = bordo_sottile
+                                if cell.row == 1: cell.font = Font(bold=True)
+                                max_len = max(max_len, len(str(cell.value or '')))
+                            col_letter = get_column_letter(col_idx)
+                            ws1.column_dimensions[col_letter].width = max(max_len + 4, 12)
+                            
                     st.download_button(label="📥 SCARICA ASSEGNI IN PORTAFOGLIO (EXCEL)", data=b_o1.getvalue(), file_name="portafoglio_assegni.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="dl_p_ass")
+                
                 with col_dl2:
                     byte_storico_dl = b""
                     res_dl_st = requests.get(URL_STORICO_API, headers=headers_git_tabella, timeout=10)
                     if res_dl_st.status_code == 200: 
-                        byte_storico_dl = base64.b64decode(res_dl_st.json().get("content", ""))
+                        df_st_grezzo = pd.read_excel(io.BytesIO(base64.b64decode(res_dl_st.json().get("content", ""))), dtype={"NUMERO_ASSEGNO": str}).fillna("")
+                        b_o2 = io.BytesIO()
+                        with pd.ExcelWriter(b_o2, engine='openpyxl') as w2:
+                            df_st_grezzo.to_excel(w2, index=False)
+                            ws2 = w2.sheets["Sheet1"]
+                            ws2.views.sheetView[0].showGridLines = True
+                            
+                            from openpyxl.styles import Border, Side, Font
+                            from openpyxl.utils import get_column_letter # 🎯 IMPORTAZIONE FUNZIONE ANTI-TUPLE
+                            bordo_sottile = Border(left=Side(style='thin', color='A0A0A0'), right=Side(style='thin', color='A0A0A0'), top=Side(style='thin', color='A0A0A0'), bottom=Side(style='thin', color='A0A0A0'))
+                            
+                            # 🎯 STRATEGIA SOLIDA: Allargamento colonne basato sugli indici numerici sullo storico
+                            for col_idx, col_cells in enumerate(ws2.columns, start=1):
+                                max_len = 0
+                                for cell in col_cells:
+                                    cell.border = bordo_sottile
+                                    if cell.row == 1: cell.font = Font(bold=True)
+                                    max_len = max(max_len, len(str(cell.value or '')))
+                                col_letter = get_column_letter(col_idx)
+                                ws2.column_dimensions[col_letter].width = max(max_len + 4, 12)
+                        byte_storico_dl = b_o2.getvalue()
+                        
                     st.download_button(label="📥 SCARICA ARCHIVIO STORICO GENERALE (EXCEL)", data=byte_storico_dl, file_name="Storico_completo_assegni.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="dl_s_ass", disabled=(byte_storico_dl == b""))
                 
                 st.dataframe(df_visualizza.style.apply(colora_assegni, axis=1).format({"IMPORTO": "{:,.2f} €"}), use_container_width=True, hide_index=True, height=400)
@@ -631,9 +666,8 @@ try:
                 st.info("ℹ️ Nessun assegno da mostrare.")
 
 
-
 # =====================================================================================
-# 🧱 [PEZZO 3 di 3]: CENTRALINA AMMINISTRATIVA DI INTERVENTO MULTI-SMARCO E CORREZIONE
+# 🧱 [BLOCCO 3 di 3]: CENTRALINA AMMINISTRATIVA DI INTERVENTO MULTI-SMARCO E CHIUSURA
 # =====================================================================================
             if ruolo_utente in ["ADMIN", "SUPERVISORE", "UFFICIO"] and not df_visualizza.empty:
                 st.markdown("---")
@@ -663,7 +697,6 @@ try:
                         else:
                             for s in assegni_scelti_da_versare:
                                 t_i = mappa_global_indici[s]
-                                # 🎯 PULITO: Modifica solo lo stato, la data coincide con quella del titolo
                                 df_visualizza_completo.at[t_i, "STATO_VERSAMENTO"] = "Versato OK"
                             out_f = io.BytesIO()
                             with pd.ExcelWriter(out_f, engine='openpyxl') as wr: 
@@ -677,7 +710,6 @@ try:
                         if assegno_scelto_da_ripristinare == "- Seleziona -": st.warning("⚠️ Seleziona un titolo!")
                         else:
                             t_i = mappa_global_indici[assegno_scelto_da_ripristinare]
-                            # 🎯 PULITO: Rimossa l'istruzione inutile DATA_VERSAMENTO = "" per evitare KeyError
                             df_visualizza_completo.at[t_i, "STATO_VERSAMENTO"] = "In Portafoglio"
                             out_f = io.BytesIO()
                             with pd.ExcelWriter(out_f, engine='openpyxl') as wr: 
