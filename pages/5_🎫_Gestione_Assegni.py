@@ -444,6 +444,16 @@ with col_btn1:
                         except Exception as e_mail_fallita:
                             st.warning(f"⚠️ Assegno registrato, ma notifica e-mail rallentata: {str(e_mail_fallita)}")
 
+                        st.session_state.contatore_grafico_reset += 1
+                        st.session_state.val_num_ass = ""; st.session_state.val_imp_ass = 0.0; st.session_state.val_dat_ass = datetime.now().date(); st.session_state.val_dat_inc = datetime.now().date()
+                        if f"f_up_{st.session_state.contatore_grafico_reset}" in st.session_state: del st.session_state[f"f_up_{st.session_state.contatore_grafico_reset}"]
+                        st.session_state.ia_elaborata = False; st.session_state.testo_spia_generato = ""
+                        st.toast("🧹 Campi puliti per la prossima operazione!")
+                        time.sleep(1.2); st.rerun()
+                    else:
+                        st.error(f"❌ Errore scrittura database Cloud (Codice HTTP {res_put.status_code})")
+                except Exception as e_database:
+                    st.error(f"❌ Interruzione nel caricamento Excel: {str(e_database)}")
 
 with col_btn2:
     if st.button("🗑️ AZZERA CAMPI", key="btn_azzeramento_campi_assegno", use_container_width=True):
