@@ -412,7 +412,7 @@ with col_btn1:
                             msg['From'] = "Manuela Arigoni - WinGaming <manuela.arigoni@wingaming.it>"
                             msg['Reply-To'] = "manuela.arigoni@wingaming.it"
                             #msg['To'] = "manuela.arigoni@wingaming.it"
-                            msg['To'] = "manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it" 
+                            msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it" 
                             msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
                             
                             corpo_html = f"""<html><body style='font-family: Arial, sans-serif;'>
