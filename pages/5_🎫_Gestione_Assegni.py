@@ -176,11 +176,7 @@ if "testo_spia_generato" not in st.session_state:
 
 
 # =====================================================================================
-# 🧱 [PARTE B]: MASCHERA RAPIDA ED ENGINE DI ELABORAZIONE STRIP-LESS (RISANATO)
-# =====================================================================================
-
-# =====================================================================================
-# 🧱 [BLOCCO 1 di 2]: ENGINE IA UNIFICATO IMMAGINI + PDF (ALLINEATO AL RESET GRAFICO)
+# 🧱 [ENGINE IA DEFINITIVO]: ALLINEAMENTO CHIAVI DINAMICHE PER COMPILAZIONE CASSELLI
 # =====================================================================================
 with st.container(border=True):
     locale_scelto = st.selectbox("Seleziona il locale di riferimento:", lista_locali, index=0, key=f"loc_box_{st.session_state.contatore_grafico_reset}")
@@ -199,6 +195,9 @@ with st.container(border=True):
                 nome_file_grezzo = file_assegno.name.lower()
                 buffer_leggero = io.BytesIO()
                 
+                # Sblocco fotocamera: resetta lo stream per catturare al primo colpo
+                file_assegno.seek(0)
+                
                 # Convertitore PDF -> Immagine integrato in RAM
                 if nome_file_grezzo.endswith(".pdf"):
                     import pypdfium2 as pdfium
@@ -210,18 +209,14 @@ with st.container(border=True):
                     documento_pdf.close()
                 else:
                     img_originale = Image.open(file_assegno)
-                    img_originale.thumbnail((600, 600))
-                    img_originale.convert("RGB").save(buffer_leggero, format="JPEG", quality=55)
+                    img_originale.thumbnail((800, 800))
+                    img_originale.convert("RGB").save(buffer_leggero, format="JPEG", quality=65)
                 
                 st.image(buffer_leggero, caption="Documento scansionato e compresso in RAM", width=350)
                 
                 api_key_grezza = str(st.secrets["gemini"]["api_key"]).strip()
                 match_chiave_pulita = re.search(r'(AIzaSy[A-Za-z0-9_\-]+)', api_key_grezza)
                 api_key_google = match_chiave_pulita.group(1) if match_chiave_pulita else api_key_grezza
-                
-                # 🎯 REGOLE DI IMPORTAZIONE NATIVE (ANTI-PORTABILITY CRASH PYTHON 3.14)
-                #import google.generativeai as generativeai
-                #generativeai.configure(api_key=api_key_google)
 
                 from google import genai
                 client = genai.Client(api_key=api_key_google)
@@ -231,7 +226,6 @@ with st.container(border=True):
                 
                 prompt_ia = "Estrai dall'assegno solo il NUMERO dell'assegno, l'IMPORTO numerico contabile e la DATA di emissione. Rispondi scrivendo unicamente i tre valori puliti separati da un trattino con spazi prima e dopo, seguendo tassativamente questo esempio: 00904 - 1250.00 - 09/10/2026"
                 
-                # Sfrutta il canale di fallback automatico sulle librerie stabili di Google
                 try:
                     risposta = client.models.generate_content(model='gemini-3.5-flash-lite', contents=[immagine_pil, prompt_ia])
                     st.session_state.testo_spia_generato = str(risposta.text).strip()
@@ -250,36 +244,38 @@ with st.container(border=True):
                         for blocco_testo in parti_estratte:
                             stringa_pulita = str(blocco_testo).strip()
                             
-                            # 🎯 COORDINAMENTO CHIAVI: Iniezione diretta nei widget dinamici correnti
+                            # 🎯 COORDINAMENTO DIRETTO CON I WIDGET DINAMICI DEL RESET
                             if posizione_indice == 0:
                                 st.session_state.val_num_ass = stringa_pulita
+                                # Iniettiamo il valore direttamente nella chiave del widget di testo per forzare lo schermo
                                 st.session_state[f"num_ass_widget_{st.session_state.contatore_grafico_reset}"] = stringa_pulita
                             
                             elif posizione_indice == 1:
                                 try:
-                                    # Correzione chirurgica dei decimali
                                     stringa_no_migliaia = stringa_pulita.replace(".", "")
                                     stringa_decimale_corretta = stringa_no_migliaia.replace(",", ".")
-                                    if "." in stringa_pulita and "," not in stringa_pulita:
-                                        val_float = float(stringa_pulita.replace(",", ""))
-                                    else:
-                                        val_float = float(stringa_decimale_corretta)
-                                        
+                                    val_float = float(stringa_pulita.replace(",", "")) if "." in stringa_pulita and "," not in stringa_pulita else float(stringa_decimale_corretta)
+                                    
                                     st.session_state.val_imp_ass = val_float
+                                    # Iniettiamo il valore direttamente nella chiave del widget numerico per forzare lo schermo
                                     st.session_state[f"imp_ass_widget_{st.session_state.contatore_grafico_reset}"] = val_float
-                                except: pass
+                                except: 
+                                    st.session_state.val_imp_ass = 0.0
+                                    st.session_state[f"imp_ass_widget_{st.session_state.contatore_grafico_reset}"] = 0.0
                             
                             elif posizione_indice == 2:
                                 try:
                                     formato_standard = stringa_pulita.replace("-", "/").replace(".", "/")
                                     val_date = datetime.strptime(formato_standard, "%d/%m/%Y").date()
                                     st.session_state.val_dat_ass = val_date
+                                    # Iniettiamo il valore direttamente nella chiave del widget data per forzare lo schermo
                                     st.session_state[f"dat_ass_widget_{st.session_state.contatore_grafico_reset}"] = val_date
                                 except: pass
                             posizione_indice += 1
                     
                     st.session_state.ia_elaborata = True
                     st.toast("🎯 Campi compilati dall'IA!")
+                    st.rerun()
             except Exception as e_vision:
                 st.error(f"❌ Errore durante l'acquisizione rapida: {str(e_vision)}")
 
@@ -287,6 +283,7 @@ with st.container(border=True):
         st.markdown("### 🔬 Dati Rilevati in tempo reale dall'IA di Google:")
         st.code(st.session_state.testo_spia_generato, language="text")
         st.warning("⚠️ **CONTROLLO OBBLIGATORIO:** Verifica l'esattezza del Numero, dell'Importo e della Data nelle caselle sottostanti prima di cliccare sul pulsante di invio blindato!")
+
 
 
 
