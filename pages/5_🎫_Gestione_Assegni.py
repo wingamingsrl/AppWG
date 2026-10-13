@@ -420,7 +420,7 @@ with col_btn1:
                             
                             # 🎯 INDIRIZZAMENTO CORRETTO: Inviata a te e all'Ufficio Amministrazione e basta
                             #msg['To'] = "manuela.arigoni@wingaming.it"
-                            msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it"
+                            msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it, alessandro.frigerio@wingaming.it"
                             msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
                             
                             corpo_html = f"<html><body style='font-family: Arial, sans-serif;'><p>Buongiorno Manuela,</p><p>Un nuovo assegno è stato acquisito digitalmente:</p><ul><li><b>Locale:</b> {locale_scelto}</li><li><b>Esattore:</b> {esecutore_nome}</li><li><b>Numero Assegno:</b> {numero_assegno_input}</li><li><b>Importo:</b> {float(importo_assegno):,.2f} €</li><li><b>Data Assegno:</b> {data_assegno.strftime('%d/%m/%Y')}</li><li><b>Data Incasso Rilevata:</b> {data_incasso.strftime('%d/%m/%Y')}</li></ul></body></html>"
@@ -436,7 +436,7 @@ with col_btn1:
                             
                             # 🎯 CONSEGNA REALE BLINDATA: Solo i vostri due indirizzi passati al server SMTP
                             #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
-                            tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it"]
+                            tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", ", alessandro.frigerio@wingaming.it"]
                             
                             server_mail.sendmail("manuela.arigoni@wingaming.it", tutti_ricevitori, msg.as_string())
                             server_mail.quit()
