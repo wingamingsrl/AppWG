@@ -287,7 +287,7 @@ if file_realmente_valido and not df_pulito_globale.empty:
                     
                     # STRUTTURA REALE PRODUCTION PRONTA PER IL FUTURO
                     msg['To'] = mail_dest_originale
-                    msg['Cc'] = "manuela.arigoni@wingaming.it, alessandro.frigerio@wingaming.it", "tatiana.vinogradova@wingaming.it"
+                    msg['Cc'] = "manuela.arigoni@wingaming.it, alessandro.frigerio@wingaming.it, tatiana.vinogradova@wingaming.it"
                     
                     corpo_html = f"""<html><body>
                         <p style='font-family: Segoe UI, sans-serif; font-size: 14px;'>Buongiorno,<br><br>
