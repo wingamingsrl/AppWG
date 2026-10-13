@@ -105,7 +105,7 @@ st.markdown("""
 FILE_ASSEGNI = "registro_assegni.xlsx"
 FILE_LOCALI = "elenco_locali.xlsx"
 # 🎯 AGGIORNAMENTO: Inclusa la colonna DATA_INCASSO nella struttura centrale del database
-COLONNE_ASSEGNI = ["DATA_REGISTRAZIONE", "ESATTORE", "LOCALE", "NUMERO_ASSEGNO", "IMPORTO", "DATA_ASSEGNO", "DATA_INCASSO", "STATO_VERSAMENTO"]
+COLONNE_ASSEGNI = ["DATA_REGISTRAZIONE", "ESATTORE", "LOCALE", "NUMERO_ASSEGNO", "IMPORTO", "DATA", "STATO_VERSAMENTO", "DATA_CONTABILITA'"]
 
 t_git = str(st.secrets["github"]["token_accesso"]).strip()
 # 🎯 RISANAMENTO COMPOSIZIONE: Indirizzo API pulito senza scorie o doppi due punti
@@ -296,7 +296,7 @@ if "val_dat_inc" not in st.session_state:
     st.session_state.val_dat_inc = datetime.now().date()
 
 st.markdown("---")
-# 🎯 POTENZIAMENTO: Allineamento spaccato a 4 colonne per far spazio alla Data Incasso
+# Allineamento a 4 colonne con le nuove etichette linguistiche richieste
 col_a, col_b, col_c, col_d = st.columns(4)
 
 with col_a:
@@ -315,20 +315,22 @@ with col_b:
         key=f"imp_ass_widget_{st.session_state.contatore_grafico_reset}"
     )
 with col_c:
+    # 🎯 AGGIORNAMENTO: Data Assegno diventa Data
     data_assegno = st.date_input(
-        "Data Assegno:", 
+        "Data:", 
         value=st.session_state.get("val_dat_ass", datetime.now().date()), 
         format="DD-MM-YYYY", 
         key=f"dat_ass_widget_{st.session_state.contatore_grafico_reset}"
     )
 with col_d:
-    # 🎯 NUOVO CAMPO: Casella di testo per l'inserimento manuale della data di incasso effettivo
+    # 🎯 AGGIORNAMENTO: Data Incasso Effettivo diventa Data Contabilità
     data_incasso = st.date_input(
-        "Data Incasso Effettivo:", 
+        "Data Contabilità:", 
         value=st.session_state.get("val_dat_inc", datetime.now().date()), 
         format="DD-MM-YYYY", 
         key=f"dat_inc_widget_{st.session_state.contatore_grafico_reset}"
     )
+
 
 
 st.markdown("---")
@@ -420,10 +422,27 @@ with col_btn1:
                             
                             # 🎯 INDIRIZZAMENTO CORRETTO: Inviata a te e all'Ufficio Amministrazione e basta
                             #msg['To'] = "manuela.arigoni@wingaming.it"
-                            msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it, alessandro.frigerio@wingaming.it"
+                            msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it, , alessandro.frigerio@wingaming.it"
                             msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
                             
-                            corpo_html = f"<html><body style='font-family: Arial, sans-serif;'><p>Buongiorno,</p><p>Un nuovo assegno è stato acquisito digitalmente:</p><ul><li><b>Locale:</b> {locale_scelto}</li><li><b>Esattore:</b> {esecutore_nome}</li><li><b>Numero Assegno:</b> {numero_assegno_input}</li><li><b>Importo:</b> {float(importo_assegno):,.2f} €</li><li><b>Data Assegno:</b> {data_assegno.strftime('%d/%m/%Y')}</li><li><b>Data Incasso Rilevata:</b> {data_incasso.strftime('%d/%m/%Y')}</li></ul></body></html>"
+                            # 🎯 AGGIORNAMENTO: Testi e diciture aggiornati per l'e-mail a te e all'Amministrazione
+                            corpo_html = f"""
+                            <html>
+                            <body style='font-family: Arial, sans-serif;'>
+                                <p>Buongiorno Manuela,</p>
+                                <p>Un nuovo assegno è stato acquisito digitalmente:</p>
+                                <ul>
+                                    <li><b>Locale:</b> {locale_scelto}</li>
+                                    <li><b>Esattore:</b> {esecutore_nome}</li>
+                                    <li><b>Numero Assegno:</b> {numero_assegno_input}</li>
+                                    <li><b>Importo:</b> {float(importo_assegno):,.2f} €</li>
+                                    <li><b>Data:</b> {data_assegno.strftime('%d/%m/%Y')}</li>
+                                    <li><b>Data Contabilità:</b> {data_incasso.strftime('%d/%m/%Y')}</li>
+                                </ul>
+                            </body>
+                            </html>
+                            """
+
                             msg.attach(MIMEText(corpo_html, 'html'))
                             
                             if file_assegno is not None:
@@ -436,7 +455,7 @@ with col_btn1:
                             
                             # 🎯 CONSEGNA REALE BLINDATA: Solo i vostri due indirizzi passati al server SMTP
                             #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
-                            tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", ", alessandro.frigerio@wingaming.it"]
+                            tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", "alessandro.frigerio@wingaming.it"]
                             
                             server_mail.sendmail("manuela.arigoni@wingaming.it", tutti_ricevitori, msg.as_string())
                             server_mail.quit()
@@ -444,6 +463,7 @@ with col_btn1:
                         except Exception as e_mail_fallita:
                             st.warning(f"⚠️ Assegno registrato, ma notifica e-mail rallentata: {str(e_mail_fallita)}")
 
+                        
                         st.session_state.contatore_grafico_reset += 1
                         st.session_state.val_num_ass = ""; st.session_state.val_imp_ass = 0.0; st.session_state.val_dat_ass = datetime.now().date(); st.session_state.val_dat_inc = datetime.now().date()
                         if f"f_up_{st.session_state.contatore_grafico_reset}" in st.session_state: del st.session_state[f"f_up_{st.session_state.contatore_grafico_reset}"]
@@ -454,6 +474,7 @@ with col_btn1:
                         st.error(f"❌ Errore scrittura database Cloud (Codice HTTP {res_put.status_code})")
                 except Exception as e_database:
                     st.error(f"❌ Interruzione nel caricamento Excel: {str(e_database)}")
+
 
 with col_btn2:
     if st.button("🗑️ AZZERA CAMPI", key="btn_azzeramento_campi_assegno", use_container_width=True):
@@ -477,6 +498,7 @@ with col_btn2:
         st.toast("🧹 Campi piallati con successo!")
         time.sleep(0.4)
         st.rerun()
+
 
 
 
@@ -593,7 +615,7 @@ try:
 
 
 # =====================================================================================
-# 🧱 [PEZZO 2 di 3]: BADGE IN PORTAFOGLIO PRIVACY, DOPPIO DOWNLOAD EXCEL ANTI-CRASH
+# 🧱 [PEZZO 2 di 3]: TABELLONE AGGIORNATO CON COLORAZIONE CHIRURGICA SU STATO_VERSAMENTO
 # =====================================================================================
             if ruolo_utente in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
                 df_visualizza = df_visualizza_completo.copy()
@@ -607,30 +629,34 @@ try:
                 somma_non_versati = float(pd.to_numeric(df_p["IMPORTO"], errors='coerce').fillna(0.0).sum())
 
             if not df_visualizza.empty:
-                def colora_assegni(riga):
-                    stils = [''] * len(riga)
-                    if str(riga["STATO_VERSAMENTO"]).strip() == "In Portafoglio": stils[df_visualizza.columns.get_loc("STATO_VERSAMENTO")] = 'background-color: #fff2cc; color: #000000; font-weight: 500;'
-                    elif str(riga["STATO_VERSAMENTO"]).strip() == "Versato OK": stils[df_visualizza.columns.get_loc("STATO_VERSAMENTO")] = 'background-color: #d1fae5; color: #065f46; font-weight: 500;'
-                    return stils
-                
                 st.markdown("---")
                 st.markdown("### 📊 Registro Storico Assegni Acquisiti")
                 st.markdown(f"<div style='background-color: #fff2cc; border-left: 5px solid #d97706; color: #92400e; padding: 10px; border-radius: 6px; font-size: 14px; font-weight: 700; margin-bottom: 15px;'>💰 IL TUO PORTAFOGLIO ATTUALE (NON VERSATI): {somma_non_versati:,.2f} €</div>", unsafe_allow_html=True)
                 
+                # Dizionario di conversione per rinominare al volo i titoli delle colonne richiesti
+                mappa_nomi_nuovi = {"DATA_ASSEGNO": "Data", "DATA_INCASSO": "Data Contabilità"}
+                
+                # ORDINE COLONNE RICHIESTO: Data Contabilità posizionato dopo lo Stato Versamento
+                ordine_colonne_finale = [
+                    "DATA_REGISTRAZIONE", "ESATTORE", "LOCALE", "NUMERO_ASSEGNO", 
+                    "IMPORTO", "Data", "STATO_VERSAMENTO", "Data Contabilità"
+                ]
+                
                 col_dl1, col_dl2 = st.columns(2)
                 with col_dl1:
                     df_esp = df_visualizza[df_visualizza["STATO_VERSAMENTO"] == "In Portafoglio"].copy()
+                    df_esp = df_esp.rename(columns=mappa_nomi_nuovi)
+                    df_esp = df_esp.reindex(columns=ordine_colonne_finale).fillna("")
+                    
                     b_o1 = io.BytesIO()
                     with pd.ExcelWriter(b_o1, engine='openpyxl') as w1: 
                         df_esp.to_excel(w1, index=False)
                         ws1 = w1.sheets["Sheet1"]
-                        ws1.views.sheetView[0].showGridLines = True
                         
                         from openpyxl.styles import Border, Side, Font
-                        from openpyxl.utils import get_column_letter # 🎯 IMPORTAZIONE FUNZIONE ANTI-TUPLE
+                        from openpyxl.utils import get_column_letter
                         bordo_sottile = Border(left=Side(style='thin', color='A0A0A0'), right=Side(style='thin', color='A0A0A0'), top=Side(style='thin', color='A0A0A0'), bottom=Side(style='thin', color='A0A0A0'))
                         
-                        # 🎯 STRATEGIA SOLIDA: Allargamento colonne basato sugli indici numerici
                         for col_idx, col_cells in enumerate(ws1.columns, start=1):
                             max_len = 0
                             for cell in col_cells:
@@ -647,17 +673,18 @@ try:
                     res_dl_st = requests.get(URL_STORICO_API, headers=headers_git_tabella, timeout=10)
                     if res_dl_st.status_code == 200: 
                         df_st_grezzo = pd.read_excel(io.BytesIO(base64.b64decode(res_dl_st.json().get("content", ""))), dtype={"NUMERO_ASSEGNO": str}).fillna("")
+                        df_st_grezzo = df_st_grezzo.rename(columns=mappa_nomi_nuovi)
+                        df_st_grezzo = df_st_grezzo.reindex(columns=ordine_colonne_finale).fillna("")
+                        
                         b_o2 = io.BytesIO()
                         with pd.ExcelWriter(b_o2, engine='openpyxl') as w2:
                             df_st_grezzo.to_excel(w2, index=False)
                             ws2 = w2.sheets["Sheet1"]
-                            ws2.views.sheetView[0].showGridLines = True
                             
                             from openpyxl.styles import Border, Side, Font
-                            from openpyxl.utils import get_column_letter # 🎯 IMPORTAZIONE FUNZIONE ANTI-TUPLE
+                            from openpyxl.utils import get_column_letter
                             bordo_sottile = Border(left=Side(style='thin', color='A0A0A0'), right=Side(style='thin', color='A0A0A0'), top=Side(style='thin', color='A0A0A0'), bottom=Side(style='thin', color='A0A0A0'))
                             
-                            # 🎯 STRATEGIA SOLIDA: Allargamento colonne basato sugli indici numerici sullo storico
                             for col_idx, col_cells in enumerate(ws2.columns, start=1):
                                 max_len = 0
                                 for cell in col_cells:
@@ -670,10 +697,26 @@ try:
                         
                     st.download_button(label="📥 SCARICA ARCHIVIO STORICO GENERALE (EXCEL)", data=byte_storico_dl, file_name="Storico_completo_assegni.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", key="dl_s_ass", disabled=(byte_storico_dl == b""))
                 
-                st.dataframe(df_visualizza.style.apply(colora_assegni, axis=1).format({"IMPORTO": "{:,.2f} €"}), use_container_width=True, hide_index=True, height=400)
+                # 🎯 PREPARAZIONE TABELLONE: Rinoma e riordina prima del rendering visivo
+                df_visualizza_view = df_visualizza.rename(columns=mappa_nomi_nuovi)
+                df_visualizza_view = df_visualizza_view.reindex(columns=ordine_colonne_finale).fillna("")
+                
+                # 🎯 FUNZIONE DI COLORAZIONE RISANATA: Agganciata agli indici esatti della tabella finale riordinata
+                def colora_assegni_real_view(riga):
+                    stils = [''] * len(riga)
+                    # Intercetta la posizione esatta della colonna nello schema finale visibile
+                    pos_stato = df_visualizza_view.columns.get_loc("STATO_VERSAMENTO")
+                    if str(riga["STATO_VERSAMENTO"]).strip() == "In Portafoglio":
+                        stils[pos_stato] = 'background-color: #fff2cc; color: #000000; font-weight: 500;'
+                    elif str(riga["STATO_VERSAMENTO"]).strip() == "Versato OK":
+                        stils[pos_stato] = 'background-color: #d1fae5; color: #065f46; font-weight: 500;'
+                    return stils
+                
+                st.dataframe(df_visualizza_view.style.apply(colora_assegni_real_view, axis=1).format({"IMPORTO": "{:,.2f} €"}), use_container_width=True, hide_index=True, height=400)
             else: 
                 st.markdown("---")
                 st.info("ℹ️ Nessun assegno da mostrare.")
+
 
 
 # =====================================================================================
