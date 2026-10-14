@@ -1,10 +1,8 @@
 name: "🤖 Sincronizzazione Notturna Ferie Snaitech - WinGaming"
 
 on:
-  workflow_dispatch:
-  schedule:
-    # 🎯 PRECISIONE: Gira ogni notte alle 01:34 UTC (corrispondenti alle 03:34 di notte in Italia)
-    - cron: '34 1 * * *'
+  repository_dispatch:
+    types: [lancia_robot_snai]
 
           
 jobs:
