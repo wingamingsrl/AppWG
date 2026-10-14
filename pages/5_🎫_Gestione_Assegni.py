@@ -420,12 +420,25 @@ with col_btn1:
                             msg['From'] = "Manuela Arigoni - WinGaming <manuela.arigoni@wingaming.it>"
                             msg['Reply-To'] = "manuela.arigoni@wingaming.it"
                             
-                            # 🎯 INDIRIZZAMENTO CORRETTO: Inviata a te e all'Ufficio Amministrazione e basta
+                            # 🎯 INDIRIZZAMENTO REALE E VISIVO CORRETTO
+                            email_tecnico = str(st.session_state.get("user_email", "")).strip().lower()
                             #msg['To'] = "manuela.arigoni@wingaming.it"
-                            msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it, , alessandro.frigerio@wingaming.it"
+                            msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it"
+                            
+                            # Se l'email del tecnico è valida, la aggiunge visivamente in copia e nella lista di consegna
+                            if email_tecnico and "@" in email_tecnico:
+                                #msg['Cc'] = "manuela.arigoni@wingaming.it"
+                                #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
+                                msg['Cc'] = f"alessandro.frigerio@wingaming.it, {email_tecnico}"
+                                tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", email_tecnico]
+                            else:
+                                #msg['Cc'] = "manuela.arigoni@wingaming.it"
+                                #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
+                                msg['Cc'] = "alessandro.frigerio@wingaming.it"
+                                tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it"]
+                                
                             msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
                             
-                            # 🎯 AGGIORNAMENTO: Testi e diciture aggiornati per l'e-mail a te e all'Amministrazione
                             corpo_html = f"""
                             <html>
                             <body style='font-family: Arial, sans-serif;'>
@@ -442,7 +455,6 @@ with col_btn1:
                             </body>
                             </html>
                             """
-
                             msg.attach(MIMEText(corpo_html, 'html'))
                             
                             if file_assegno is not None:
@@ -453,15 +465,13 @@ with col_btn1:
                                 parte_allegato.add_header('Content-Disposition', f'attachment; filename="{file_assegno.name}"')
                                 msg.attach(parte_allegato)
                             
-                            # 🎯 CONSEGNA REALE BLINDATA: Solo i vostri due indirizzi passati al server SMTP
-                            #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
-                            tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", "alessandro.frigerio@wingaming.it"]
-                            
                             server_mail.sendmail("manuela.arigoni@wingaming.it", tutti_ricevitori, msg.as_string())
                             server_mail.quit()
-                            st.success("🎯 Operazione completata! Riga salvata ed e-mail inviata a te e all'Amministrazione!")
+                            st.success("🎯 Operazione completata! Riga salvata ed e-mail inviata con successo!")
                         except Exception as e_mail_fallita:
-                            st.warning(f"⚠️ Assegno registrato, ma notifica e-mail rallentata: {str(e_mail_fallita)}")
+                            # 🎯 BLINDATURA: Diventa un errore ROSSO fisso per 10 secondi, così se fallisce leggi il motivo!
+                            st.error(f"❌ Errore spedizione mail reale: {str(e_mail_fallita)}")
+                            time.sleep(10.0)
 
                         
                         st.session_state.contatore_grafico_reset += 1
@@ -791,3 +801,4 @@ try:
     elif res_v.status_code == 404: st.info("ℹ️ Registro vuoto su GitHub.")
     else: st.warning(f"⚠️ Impossibile accedere al Cloud. HTTP {res_v.status_code}")
 except Exception as e: st.error(f"❌ Errore caricamento blocco finale: {str(e)}")
+
