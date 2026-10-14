@@ -1,11 +1,8 @@
-name: Sveglia Automatica Gestionale
+name: Sveglia Automatica Gestionale H24
 
 on:
-  schedule:
-    # Si attiva in automatico ogni mattina dal lunedì al venerdì alle ore 07:00 italiane (05:00 UTC)
-    - cron: '0 5 * * 1-5'
-  workflow_dispatch: # Ti permette di lanciare la scossa manuale quando vuoi da GitHub
-
+  repository_dispatch:
+    types: [lancia_sveglia_h24]
 jobs:
   sveglia:
     runs-on: ubuntu-latest
@@ -31,7 +28,7 @@ jobs:
         from playwright.sync_api import sync_playwright
         
         # 🎯 ELENCO PULITO ED ALLINEATO
-        progetti = ['appwgest', 'sistema-ferie', 'appwg-test']
+        progetti = ['appwgest', 'appwg-test']
         
         with sync_playwright() as p:
             browser = p.chromium.launch(headless=True)
