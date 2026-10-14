@@ -1,9 +1,8 @@
 name: "📊 Estrazione Ricorrente Report Incassi - WinGaming"
+
 on:
-  workflow_dispatch:
-  schedule:
-    - cron: '12 7 * * 2'
-    - cron: '12 12 * * 5'
+  repository_dispatch:
+    types: [lancia_report_incassi]
 permissions:
   contents: write
   actions: read
