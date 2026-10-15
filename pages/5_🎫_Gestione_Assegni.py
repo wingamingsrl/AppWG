@@ -1,5 +1,5 @@
 # =====================================================================================
-# 🧱 [BLOCCO 1]: LIBRERIE, STILE GRAFICO PASTELLO E INIZIALIZZAZIONE MEMORIA ASSOLUTA
+# 🧱 [BLOCCO 1 RISANATO]: TIMEOUT CONTROLLATO (2 ORE), RUOLI E MEMORIA DI SESSIONE
 # =====================================================================================
 import os
 import io
@@ -15,6 +15,27 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
+
+# 1️⃣ CONTROLLO DI SICUREZZA 1: Se non c'è traccia di login, rimanda l'utente alla Home
+if "user_nome" not in st.session_state or not st.session_state.user_nome:
+    st.warning("⚠️ Accesso negato. Effettua prima il login nella pagina principale.")
+    st.button("🏠 Vai alla Home di Login", on_click=lambda: st.switch_page("1_🏠_Home.py"), use_container_width=True)
+    st.stop()
+
+# 2️⃣ CONTROLLO DI SICUREZZA 2: Verifica timeout inattività di 2 ore (7200 secondi)
+ora_attuale = time.time()
+ultimo_click = st.session_state.get("ultimo_click_tempo", ora_attuale)
+
+if (ora_attuale - ultimo_click) > 7200:
+    # Sessione scaduta: svuota la RAM per evitare accessi orfani
+    for chiave in list(st.session_state.keys()):
+        del st.session_state[chiave]
+    st.error("⏳ Sessione scaduta per inattività (Limite: 2 ore). Effettua nuovamente il login.")
+    st.button("🏠 Torna al Login", on_click=lambda: st.switch_page("1_🏠_Home.py"), use_container_width=True)
+    st.stop()
+else:
+    # Se l'utente sta lavorando, aggiorna il marcatore per regalargli altre 2 ore da adesso
+    st.session_state.ultimo_click_tempo = ora_attuale
 
 # 🎯 SBLOCCO DIRETTO: Legge i dati reali lasciati dalla Home nella memoria RAM del server
 nome_da_sessione = st.session_state.get("user_nome", "")
@@ -36,6 +57,7 @@ else:
 # Inizializzazione dei contatori grafici di reset in RAM se non esistono
 if "contatore_grafico_reset" not in st.session_state:
     st.session_state.contatore_grafico_reset = 100
+
 
 st.cache_data.clear()
 st.set_page_config(page_title="Gestione Assegni - WinGaming", page_icon="🎫", layout="wide")
