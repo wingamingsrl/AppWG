@@ -479,7 +479,7 @@ with col_btn1:
                             corpo_html = f"""
                             <html>
                             <body style='font-family: Arial, sans-serif;'>
-                                <p>Buongiorno Manuela,</p>
+                                <p>Buongiorno,</p>
                                 <p>Un nuovo assegno è stato acquisito digitalmente:</p>
                                 <ul>
                                     <li><b>Locale:</b> {locale_scelto}</li>
@@ -488,7 +488,7 @@ with col_btn1:
                                     <li><b>Importo:</b> {float(importo_assegno):,.2f} €</li>
                                     <li><b>Giorni:</b> {giorni_differenza}</li>
                                 </ul>
-                                <p>In allegato trovi il documento PDF dell'assegno.</p>
+                                <p>In allegato l'assegno.</p>
                             </body>
                             </html>
                             """
