@@ -24,7 +24,12 @@ if "user_nome" not in st.session_state or not st.session_state.user_nome:
 
 # 2️⃣ VERIFICA TIMEOUT (2 ORE): Controlla la scadenza della sessione per inattività
 ora_attuale = time.time()
-ultimo_click = st.session_state.get("ultimo_click_tempo", ora_attuale)
+
+# 🎯 FIX F5: Se rinfreschi la pagina, reinizializza l'orario attuale anziché far scadere la sessione
+if "ultimo_click_tempo" not in st.session_state:
+    st.session_state.ultimo_click_tempo = ora_attuale
+
+ultimo_click = st.session_state.ultimo_click_tempo
 
 if (ora_attuale - ultimo_click) > 7200:
     for chiave in list(st.session_state.keys()):
@@ -34,6 +39,7 @@ if (ora_attuale - ultimo_click) > 7200:
     st.stop()
 else:
     st.session_state.ultimo_click_tempo = ora_attuale
+
 
 # 3️⃣ ALLINEAMENTO VARIABILI ANAGRAFICHE: Recupero variabili post-login pulite in maiuscolo
 esecutore_nome = str(st.session_state.get("user_nome", "UFFICIO")).strip().upper()
