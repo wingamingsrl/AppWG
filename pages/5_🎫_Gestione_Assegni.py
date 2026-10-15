@@ -81,6 +81,9 @@ st.markdown("""
     <style>
     #MainMenu, footer, .stDecoration, [data-testid="stFooter"] { visibility: hidden !important; display: none !important; }
     
+    /* 🎯 ANTI-DUPLICATO: Pialla l'elenco automatico di Streamlit per mostrare solo i nostri st.page_link */
+    [data-testid="stSidebarNav"] { display: none !important; }
+    
     /* 🎯 ANTI-DARK MODE: Costringe l'intera plancia a rimanere chiara su qualsiasi smartphone */
     .stApp { 
         background-color: #f8fafc !important; 
