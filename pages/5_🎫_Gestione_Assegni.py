@@ -469,11 +469,7 @@ with col_btn1:
                             
                             # Elenco di consegna reale per il server di posta
                             #tutti_ricevitori = "manuela.arigoni@wingaming.it"
-                            tutti_ricevitori = [
-                                "manuela.arigoni@wingaming.it", 
-                                "ufficio.amministrazione@wingaming.it", 
-                                "alessandro.frigerio@wingaming.it"
-                            ]
+                            tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", "alessandro.frigerio@wingaming.it"]
                                 
                             msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
                             
