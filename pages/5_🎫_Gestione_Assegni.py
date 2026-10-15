@@ -1,5 +1,5 @@
 # =====================================================================================
-# 🧱 [BLOCCO 1 RISANATO]: TIMEOUT CONTROLLATO (2 ORE), RUOLI E MEMORIA DI SESSIONE
+# 🧱 [BLOCCO 1]: AUTENTICAZIONE, TIMEOUT (2 ORE) E MENU MATEMATICO UNIFICATO
 # =====================================================================================
 import os
 import io
@@ -16,43 +16,47 @@ from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
 from email import encoders
 
-# 1️⃣ CONTROLLO DI SICUREZZA 1: Se non c'è traccia di login, rimanda l'utente alla Home
+# 1️⃣ VERIFICA ACCESSO OBLIGATORIA: Se l'utente non è loggato, rimandalo alla Home
 if "user_nome" not in st.session_state or not st.session_state.user_nome:
     st.warning("⚠️ Accesso negato. Effettua prima il login nella pagina principale.")
     st.button("🏠 Vai alla Home di Login", on_click=lambda: st.switch_page("1_🏠_Home.py"), use_container_width=True)
     st.stop()
 
-# 2️⃣ CONTROLLO DI SICUREZZA 2: Verifica timeout inattività di 2 ore (7200 secondi)
+# 2️⃣ VERIFICA TIMEOUT (2 ORE): Controlla la scadenza della sessione per inattività
 ora_attuale = time.time()
 ultimo_click = st.session_state.get("ultimo_click_tempo", ora_attuale)
 
 if (ora_attuale - ultimo_click) > 7200:
-    # Sessione scaduta: svuota la RAM per evitare accessi orfani
     for chiave in list(st.session_state.keys()):
         del st.session_state[chiave]
     st.error("⏳ Sessione scaduta per inattività (Limite: 2 ore). Effettua nuovamente il login.")
     st.button("🏠 Torna al Login", on_click=lambda: st.switch_page("1_🏠_Home.py"), use_container_width=True)
     st.stop()
 else:
-    # Se l'utente sta lavorando, aggiorna il marcatore per regalargli altre 2 ore da adesso
     st.session_state.ultimo_click_tempo = ora_attuale
 
-# 🎯 SBLOCCO DIRETTO: Legge i dati reali lasciati dalla Home nella memoria RAM del server
-nome_da_sessione = st.session_state.get("user_nome", "")
-ruolo_da_sessione = st.session_state.get("user_ruolo", "")
+# 3️⃣ ALLINEAMENTO VARIABILI ANAGRAFICHE: Recupero variabili post-login pulite in maiuscolo
+esecutore_nome = str(st.session_state.get("user_nome", "UFFICIO")).strip().upper()
+esecutore_email = str(st.session_state.get("user_email", "manuela.arigoni@wingaming.it")).strip().lower()
+ruolo_utente_connesso = str(st.session_state.get("user_ruolo", "TECNICO")).strip().upper()
+ruolo_utente = ruolo_utente_connesso  # Mantenuto per compatibilità con il resto del file
 
-# 🚀 PARACADUTE FORZATO: Se la sessione è vuota (magari per un rinfresco della pagina), 
-# evita tassativamente di scrivere "TECNICO" nella colonna dell'esattore!
-if not nome_da_sessione or str(nome_da_sessione).strip().upper() == "TECNICO":
-    # Mette un nome di riconoscimento chiaro così capiamo subito se è scattato il paracadute
-    esecutore_nome = "UFFICIO_CENTRALE" 
-else:
-    esecutore_nome = str(nome_da_sessione).strip().upper()
-
-if not ruolo_da_sessione:
-    ruolo_utente = "ADMIN" # Forziamo ADMIN nel paracadute così non ti blocca la visualizzazione
-else:
-    ruolo_utente = str(ruolo_da_sessione).strip().upper()
+# 4️⃣ DISEGNO DELLA SIDEBAR GENERATA MATEMATICAMENTE (STILE FERIE / HOME / MAGAZZINO)
+with st.sidebar:
+    if ruolo_utente_connesso in ["ADMIN", "SUPERVISORE", "UFFICIO"]:
+        # Menù completo per la Direzione
+        st.page_link("1_🏠_Home.py", label="Home", icon="🏠")
+        st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
+        st.page_link("pages/3_📦_Giacenza_Magazzino.py", label="Giacenza Magazzino", icon="📦")
+        st.page_link("pages/4_📊_Report_Incassi.py", label="Report Incassi", icon="📊")
+        st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Gestione Assegni", icon="🎫")
+        st.page_link("pages/9_🚪_Disconnetti.py", label="Logout", icon="🚪")
+    else:
+        # Menù ridotto per i Tecnici sul territorio (Vede solo i 3 abilitati)
+        st.page_link("1_🏠_Home.py", label="Home", icon="🏠")
+        st.page_link("pages/2_🧳_Ferie_Esercenti.py", label="Ferie Esercenti", icon="🧳")
+        st.page_link("pages/5_🎫_Gestione_Assegni.py", label="Scansione Assegni", icon="🎫")
+        st.page_link("pages/9_🚪_Disconnetti.py", label="Logout", icon="🚪")
 
 # Inizializzazione dei contatori grafici di reset in RAM se non esistono
 if "contatore_grafico_reset" not in st.session_state:
