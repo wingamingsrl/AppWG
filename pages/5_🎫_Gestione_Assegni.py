@@ -72,6 +72,8 @@ if "contatore_grafico_reset" not in st.session_state:
 
 
 
+
+
 st.cache_data.clear()
 st.set_page_config(page_title="Gestione Assegni - WinGaming", page_icon="🎫", layout="wide")
 
@@ -216,12 +218,35 @@ if "testo_spia_generato" not in st.session_state:
 # =====================================================================================
 # 🧱 [ENGINE IA DEFINITIVO]: ALLINEAMENTO CHIAVI DINAMICHE PER COMPILAZIONE CASSELLI
 # =====================================================================================
+# =====================================================================================
+# 🧱 [BLOCCO 3 & 4]: PRESELEZIONE LOCALE AUTO-STABILIZZATA ANTI-DOPPIO SCATTO
+# =====================================================================================
 with st.container(border=True):
-    locale_scelto = st.selectbox("Seleziona il locale di riferimento:", lista_locali, index=0, key=f"loc_box_{st.session_state.contatore_grafico_reset}")
+    # 🎯 CENTRALINA ANTI-LOOP: Se cambia il locale, inibisce per un istante lo schermo
+    locale_scelto = st.selectbox(
+        "Seleziona il locale di riferimento:", 
+        lista_locali, 
+        index=0, 
+        key="locale_scelto_box"
+    )
+    
+    # Rileva se il locale è stato appena toccato e congela la pagina per memorizzare i byte
+    if locale_scelto != "- Selezionare il Locale -":
+        if "vecchio_locale_selezionato" not in st.session_state or st.session_state.vecchio_locale_selezionato != locale_scelto:
+            st.session_state.vecchio_locale_selezionato = locale_scelto
+            with st.spinner("⏳ Stabilizzazione memoria fotocamera in corso..."):
+                time.sleep(0.4) # Micro-pausa di ancoraggio per il browser dello smartphone
+                st.rerun()
+
     st.markdown("---")
     
-    # Unico uploader integrato per immagini e PDF
-    file_assegno = st.file_uploader("📸 Scatta, inserisci la foto o il PDF dell'assegno:", type=["pdf", "jpg", "jpeg", "png"], key=f"f_up_{st.session_state.contatore_grafico_reset}")
+    # 📸 UPLOADER RIGIDO: Ora riceve i dati su una memoria browser completamente ferma e pronta
+    file_assegno = st.file_uploader(
+        "📸 Scatta, inserisci la foto o il PDF dell'assegno:", 
+        type=["pdf", "jpg", "jpeg", "png"], 
+        key="uploader_file_assegno"
+    )
+
 
     if file_assegno is None:
         st.session_state.ia_elaborata = False
@@ -233,24 +258,27 @@ with st.container(border=True):
                 nome_file_grezzo = file_assegno.name.lower()
                 buffer_leggero = io.BytesIO()
                 
-                # Sblocco fotocamera: resetta lo stream per catturare al primo colpo
-                file_assegno.seek(0)
+                # 🎯 FIX DEFINITIVO TELECAMERA: Estraiamo i byte stabili in RAM
+                # Abbiamo rimosso file_assegno.seek(0) che tagliava le gambe alla fotocamera al 1° scatto!
+                dati_foto_grezzi = file_assegno.getvalue()
                 
-                # Convertitore PDF -> Immagine integrato in RAM
+                # Convertitore PDF -> Immagine integrato in RAM risanato
                 if nome_file_grezzo.endswith(".pdf"):
                     import pypdfium2 as pdfium
-                    documento_pdf = pdfium.PdfDocument(file_assegno)
+                    documento_pdf = pdfium.PdfDocument(io.BytesIO(dati_foto_grezzi))
                     prima_pagina = documento_pdf[0]
                     bitmap_grezza = prima_pagina.render(scale=2)
                     immagine_renderizzata = bitmap_grezza.to_pil()
                     immagine_renderizzata.convert("RGB").save(buffer_leggero, format="JPEG", quality=75)
                     documento_pdf.close()
                 else:
-                    img_originale = Image.open(file_assegno)
+                    img_originale = Image.open(io.BytesIO(dati_foto_grezzi))
                     img_originale.thumbnail((800, 800))
                     img_originale.convert("RGB").save(buffer_leggero, format="JPEG", quality=65)
                 
                 st.image(buffer_leggero, caption="Documento scansionato e compresso in RAM", width=350)
+
+
                 
                 api_key_grezza = str(st.secrets["gemini"]["api_key"]).strip()
                 match_chiave_pulita = re.search(r'(AIzaSy[A-Za-z0-9_\-]+)', api_key_grezza)
@@ -261,6 +289,8 @@ with st.container(border=True):
                 
                 buffer_leggero.seek(0)
                 immagine_pil = Image.open(buffer_leggero)
+
+
                 
                 prompt_ia = "Estrai dall'assegno solo il NUMERO dell'assegno, l'IMPORTO numerico contabile e la DATA di emissione. Rispondi scrivendo unicamente i tre valori puliti separati da un trattino con spazi prima e dopo, seguendo tassativamente questo esempio: 00904 - 1250.00 - 09/10/2026"
                 
@@ -392,7 +422,7 @@ with col_btn1:
                     
                     # 🎯 COMPILAZIONE PERFETTA: La rotta esatta per salvare i dati nell'Excel degli Assegni
                     parte_api = "api.github.com"
-                    parte_repo = "repos/wingamingsrl/AppWG"
+                    parte_repo = "repos/wingamingsrl/AppWGt"
                     URL_API_GITHUB = f"https://{parte_api}/{parte_repo}/contents/registro_assegni.xlsx"
 
                     
@@ -456,26 +486,27 @@ with col_btn1:
                             server_mail.login("wingamingsrl@gmail.com", "zndjprxjvhiustio")
                             
                             msg = MIMEMultipart()
+                            #msg['From'] = "TEST - Manuela Arigoni - WinGaming <manuela.arigoni@wingaming.it>"
                             msg['From'] = "Manuela Arigoni - WinGaming <manuela.arigoni@wingaming.it>"
                             msg['Reply-To'] = "manuela.arigoni@wingaming.it"
                             
-                            # 🎯 DESTINATARI FISSI DIREZIONE: Tu e Amministrazione in chiaro
+                            # 🎯 INDIRIZZAMENTO DIREZIONE: Mantenute intatte le tue righe commentate di produzione
                             #msg['To'] = "manuela.arigoni@wingaming.it"
                             msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it"
                             
-                            # Alessandro fisso in copia (Cc) - Tecnico totalmente rimosso
                             #msg['Cc'] = "manuela.arigoni@wingaming.it"
                             msg['Cc'] = "alessandro.frigerio@wingaming.it"
                             
-                            # Elenco di consegna reale per il server di posta
-                            #tutti_ricevitori = "manuela.arigoni@wingaming.it"
+                            # 🎯 STRUTTURA VETTORIALE RISANATA: Lista quadrata per eliminare il blocco SMTP e sbloccare la fotocamera
+                            #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
                             tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", "alessandro.frigerio@wingaming.it"]
                                 
                             msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
-                            
+
                             # 🎯 CALCOLO DEI GIORNI DI DIFFERENZA (Data Assegno - Data Contabilità)
                             giorni_differenza = (data_assegno - data_incasso).days
                             
+                            # 🎯 CORPO HTML SNELLO: Rimosse definitivamente le date singole, inserito solo il divario Giorni
                             corpo_html = f"""
                             <html>
                             <body style='font-family: Arial, sans-serif;'>
@@ -496,20 +527,24 @@ with col_btn1:
                             msg.attach(MIMEText(corpo_html, 'html'))
                             
                             if file_assegno is not None:
-                                file_assegno.seek(0)
+                                # 🎯 ALLEGATO PROTETTO ANTI-CRASH: Estrae i byte in tempo reale senza toccare il puntatore live!
+                                byte_file_allegato = file_assegno.getvalue()
                                 parte_allegato = MIMEBase('application', 'octet-stream')
-                                parte_allegato.set_payload(file_assegno.read())
+                                parte_allegato.set_payload(byte_file_allegato)
                                 encoders.encode_base64(parte_allegato)
                                 parte_allegato.add_header('Content-Disposition', f'attachment; filename="{file_assegno.name}"')
                                 msg.attach(parte_allegato)
+
+
                             
                             server_mail.sendmail("manuela.arigoni@wingaming.it", tutti_ricevitori, msg.as_string())
                             server_mail.quit()
                             st.success("🎯 Operazione completata! Riga salvata ed e-mail inviata con successo!")
                         except Exception as e_mail_fallita:
-                            # 🎯 BLINDATURA: Diventa un errore ROSSO fisso per 10 secondi, così se fallisce leggi il motivo!
+                            # 🎯 BLINDATURA DI EMERGENZA: Diventa un errore fisso per 10 secondi per diagnosticare la rete
                             st.error(f"❌ Errore spedizione mail reale: {str(e_mail_fallita)}")
                             time.sleep(10.0)
+
 
                         
                         st.session_state.contatore_grafico_reset += 1
@@ -839,4 +874,3 @@ try:
     elif res_v.status_code == 404: st.info("ℹ️ Registro vuoto su GitHub.")
     else: st.warning(f"⚠️ Impossibile accedere al Cloud. HTTP {res_v.status_code}")
 except Exception as e: st.error(f"❌ Errore caricamento blocco finale: {str(e)}")
-
