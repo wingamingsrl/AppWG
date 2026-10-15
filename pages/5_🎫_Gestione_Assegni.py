@@ -468,7 +468,7 @@ with col_btn1:
                             msg['Cc'] = "alessandro.frigerio@wingaming.it"
                             
                             # Elenco di consegna reale per il server di posta
-                            #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
+                            #tutti_ricevitori = "manuela.arigoni@wingaming.it"
                             tutti_ricevitori = [
                                 "manuela.arigoni@wingaming.it", 
                                 "ufficio.amministrazione@wingaming.it", 
