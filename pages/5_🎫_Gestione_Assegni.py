@@ -421,22 +421,23 @@ with col_btn1:
                             msg['From'] = "Manuela Arigoni - WinGaming <manuela.arigoni@wingaming.it>"
                             msg['Reply-To'] = "manuela.arigoni@wingaming.it"
                             
-                            # 🎯 INDIRIZZAMENTO REALE E VISIVO CORRETTO
+                            # 🎯 CONFIGURAZIONE NUOVI DESTINATARI RIGIDA E BLINDATA
                             email_tecnico = str(st.session_state.get("user_email", "")).strip().lower()
+                            
+                            # Destinatari principali fissi (To)
                             #msg['To'] = "manuela.arigoni@wingaming.it"
                             msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it"
                             
-                            # Se l'email del tecnico è valida, la aggiunge visivamente in copia e nella lista di consegna
+                            # Controllo per l'inserimento dinamico del tecnico in copia (Cc) insieme ad Alessandro
                             if email_tecnico and "@" in email_tecnico:
-                                #msg['Cc'] = "manuela.arigoni@wingaming.it"
-                                #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
+                                #msg['Cc'] = f"manuela.arigoni@wingaming.it, {email_tecnico}"
                                 msg['Cc'] = f"alessandro.frigerio@wingaming.it, {email_tecnico}"
-                                tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", email_tecnico]
+                                #tutti_ricevitori = ["manuela.arigoni@wingaming.it", email_tecnico]
+                                tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", "alessandro.frigerio@wingaming.it", email_tecnico]
                             else:
-                                #msg['Cc'] = "manuela.arigoni@wingaming.it"
-                                #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
                                 msg['Cc'] = "alessandro.frigerio@wingaming.it"
-                                tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it"]
+                                #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
+                                tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", "alessandro.frigerio@wingaming.it"]
                                 
                             msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
                             
