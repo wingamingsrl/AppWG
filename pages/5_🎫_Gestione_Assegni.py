@@ -273,11 +273,12 @@ with st.container(border=True):
                                 except: pass
                             posizione_indice += 1
                     
+                    # 🎯 LA MODIFICA CHIRURGICA: Rimosso st.rerun() per bloccare il ciclo a vuoto della fotocamera!
                     st.session_state.ia_elaborata = True
                     st.toast("🎯 Campi compilati dall'IA!")
-                    st.rerun()
             except Exception as e_vision:
                 st.error(f"❌ Errore durante l'acquisizione rapida: {str(e_vision)}")
+
 
     if st.session_state.ia_elaborata:
         st.markdown("### 🔬 Dati Rilevati in tempo reale dall'IA di Google:")
