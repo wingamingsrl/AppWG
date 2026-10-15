@@ -475,7 +475,7 @@ with col_btn1:
                                 "alessandro.frigerio@wingaming.it"
                             ]
                                 
-                            msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}""
+                            msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
                             
                             # 🎯 CALCOLO DEI GIORNI DI DIFFERENZA (Data Assegno - Data Contabilità)
                             giorni_differenza = (data_assegno - data_incasso).days
