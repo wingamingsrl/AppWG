@@ -459,42 +459,46 @@ with col_btn1:
                             msg['From'] = "Manuela Arigoni - WinGaming <manuela.arigoni@wingaming.it>"
                             msg['Reply-To'] = "manuela.arigoni@wingaming.it"
                             
-                            # 🎯 CONFIGURAZIONE NUOVI DESTINATARI RIGIDA E BLINDATA
-                            email_tecnico = str(st.session_state.get("user_email", "")).strip().lower()
-                            
-                            # Destinatari principali fissi (To)
+                            # 🎯 DESTINATARI FISSI DIREZIONE: Tu e Amministrazione in chiaro
                             #msg['To'] = "manuela.arigoni@wingaming.it"
                             msg['To'] = "manuela.arigoni@wingaming.it, ufficio.amministrazione@wingaming.it"
                             
-                            # Controllo per l'inserimento dinamico del tecnico in copia (Cc) insieme ad Alessandro
-                            if email_tecnico and "@" in email_tecnico:
-                                #msg['Cc'] = f"manuela.arigoni@wingaming.it, {email_tecnico}"
-                                msg['Cc'] = f"alessandro.frigerio@wingaming.it, {email_tecnico}"
-                                #tutti_ricevitori = ["manuela.arigoni@wingaming.it", email_tecnico]
-                                tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", "alessandro.frigerio@wingaming.it", email_tecnico]
-                            else:
-                                msg['Cc'] = "alessandro.frigerio@wingaming.it"
-                                #tutti_ricevitori = ["manuela.arigoni@wingaming.it"]
-                                tutti_ricevitori = ["manuela.arigoni@wingaming.it", "ufficio.amministrazione@wingaming.it", "alessandro.frigerio@wingaming.it"]
+                            # Alessandro fisso in copia (Cc) - Tecnico totalmente rimosso
+                            #msg['Cc'] = "manuela.arigoni@wingaming.it"
+                            msg['Cc'] = "alessandro.frigerio@wingaming.it"
+                            
+                            # Elenco di consegna reale per il server di posta
+                            #tutti_ricevitori = [
+                                "manuela.arigoni@wingaming.it"
+                            ]
+                            tutti_ricevitori = [
+                                "manuela.arigoni@wingaming.it", 
+                                "ufficio.amministrazione@wingaming.it", 
+                                "alessandro.frigerio@wingaming.it"
+                            ]
                                 
-                            msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}"
+                            msg['Subject'] = f"🎫 [WinGaming] Nuovo Assegno Acquisito - {locale_scelto}""
+                            
+                            # 🎯 CALCOLO DEI GIORNI DI DIFFERENZA (Data Assegno - Data Contabilità)
+                            giorni_differenza = (data_assegno - data_incasso).days
                             
                             corpo_html = f"""
                             <html>
                             <body style='font-family: Arial, sans-serif;'>
-                                <p>Buongiorno,</p>
+                                <p>Buongiorno Manuela,</p>
                                 <p>Un nuovo assegno è stato acquisito digitalmente:</p>
                                 <ul>
                                     <li><b>Locale:</b> {locale_scelto}</li>
                                     <li><b>Esattore:</b> {esecutore_nome}</li>
                                     <li><b>Numero Assegno:</b> {numero_assegno_input}</li>
                                     <li><b>Importo:</b> {float(importo_assegno):,.2f} €</li>
-                                    <li><b>Data:</b> {data_assegno.strftime('%d/%m/%Y')}</li>
-                                    <li><b>Data Contabilità:</b> {data_incasso.strftime('%d/%m/%Y')}</li>
+                                    <li><b>Giorni:</b> {giorni_differenza}</li>
                                 </ul>
+                                <p>In allegato trovi il documento PDF dell'assegno.</p>
                             </body>
                             </html>
                             """
+
                             msg.attach(MIMEText(corpo_html, 'html'))
                             
                             if file_assegno is not None:
