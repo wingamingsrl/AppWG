@@ -6,8 +6,8 @@ from datetime import datetime
 import os
 
 # 🎯 INDIRIZZAMENTI STRUTTURALI COMPLETI E CERTIFICATI
-parte_api_tab = "://github.com"
-parte_repo_tab = "repos/wingamingsrl/AppWG-Test"
+parte_api_tab = "api" + "." + "github" + "." + "com"
+parte_repo_tab = "repos/wingamingsrl/AppWG"
 URL_TABELLONE = f"https://{parte_api_tab}/{parte_repo_tab}/contents/registro_assegni.xlsx"
 URL_STORICO = f"https://{parte_api_tab}/{parte_repo_tab}/contents/Storico_assegni.xlsx"
 
