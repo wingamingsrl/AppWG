@@ -216,15 +216,37 @@ if "testo_spia_generato" not in st.session_state:
 
 
 # =====================================================================================
-# 🧱 [BLOCCO 3 & 4 RISANATO]: MOTORE IA GOOGLE — FIX DEF 1° SCATTO IMMEDIATO SENZA LOOP
+# 🧱 [ENGINE IA DEFINITIVO]: ALLINEAMENTO CHIAVI DINAMICHE PER COMPILAZIONE CASSELLI
+# =====================================================================================
+# =====================================================================================
+# 🧱 [BLOCCO 3 & 4]: PRESELEZIONE LOCALE AUTO-STABILIZZATA ANTI-DOPPIO SCATTO
 # =====================================================================================
 with st.container(border=True):
-    # 🎯 CHIAVE FISSA: Garantisce la stabilità dei parametri all'attivazione della fotocamera
-    locale_scelto = st.selectbox("Seleziona il locale di riferimento:", lista_locali, index=0, key="locale_scelto_stable_box")
+    # 🎯 CENTRALINA ANTI-LOOP: Se cambia il locale, inibisce per un istante lo schermo
+    locale_scelto = st.selectbox(
+        "Seleziona il locale di riferimento:", 
+        lista_locali, 
+        index=0, 
+        key="locale_scelto_box"
+    )
+    
+    # Rileva se il locale è stato appena toccato e congela la pagina per memorizzare i byte
+    if locale_scelto != "- Selezionare il Locale -":
+        if "vecchio_locale_selezionato" not in st.session_state or st.session_state.vecchio_locale_selezionato != locale_scelto:
+            st.session_state.vecchio_locale_selezionato = locale_scelto
+            with st.spinner("⏳ Stabilizzazione memoria fotocamera in corso..."):
+                time.sleep(0.4) # Micro-pausa di ancoraggio per il browser dello smartphone
+                st.rerun()
+
     st.markdown("---")
     
-    # 📸 UPLOADER RIGIDO: Chiave fissa. Riceve i byte su una memoria stabile e non esegue auto-reset
-    file_assegno = st.file_uploader("📸 Scatta, inserisci la foto o il PDF dell'assegno:", type=["pdf", "jpg", "jpeg", "png"], key="uploader_file_assegno_definitivo")
+    # 📸 UPLOADER RIGIDO: Ora riceve i dati su una memoria browser completamente ferma e pronta
+    file_assegno = st.file_uploader(
+        "📸 Scatta, inserisci la foto o il PDF dell'assegno:", 
+        type=["pdf", "jpg", "jpeg", "png"], 
+        key="uploader_file_assegno"
+    )
+
 
     if file_assegno is None:
         st.session_state.ia_elaborata = False
@@ -236,10 +258,11 @@ with st.container(border=True):
                 nome_file_grezzo = file_assegno.name.lower()
                 buffer_leggero = io.BytesIO()
                 
-                # Cattura solida dei byte in RAM: Rimosso definitivamente seek(0) che corrompeva lo stream!
+                # 🎯 FIX DEFINITIVO TELECAMERA: Estraiamo i byte stabili in RAM
+                # Abbiamo rimosso file_assegno.seek(0) che tagliava le gambe alla fotocamera al 1° scatto!
                 dati_foto_grezzi = file_assegno.getvalue()
                 
-                # Convertitore PDF -> Immagine integrato in RAM risanato con indice fisso
+                # Convertitore PDF -> Immagine integrato in RAM risanato
                 if nome_file_grezzo.endswith(".pdf"):
                     import pypdfium2 as pdfium
                     documento_pdf = pdfium.PdfDocument(io.BytesIO(dati_foto_grezzi))
@@ -254,6 +277,8 @@ with st.container(border=True):
                     img_originale.convert("RGB").save(buffer_leggero, format="JPEG", quality=65)
                 
                 st.image(buffer_leggero, caption="Documento scansionato e compresso in RAM", width=350)
+
+
                 
                 api_key_grezza = str(st.secrets["gemini"]["api_key"]).strip()
                 match_chiave_pulita = re.search(r'(AIzaSy[A-Za-z0-9_\-]+)', api_key_grezza)
@@ -264,11 +289,21 @@ with st.container(border=True):
                 
                 buffer_leggero.seek(0)
                 immagine_pil = Image.open(buffer_leggero)
+
+
                 
                 prompt_ia = "Estrai dall'assegno solo il NUMERO dell'assegno, l'IMPORTO numerico contabile e la DATA di emissione. Rispondi scrivendo unicamente i tre valori puliti separati da un trattino con spazi prima e dopo, seguendo tassativamente questo esempio: 00904 - 1250.00 - 09/10/2026"
                 
-                risposta = client.models.generate_content(model='gemini-3.5-flash', contents=[immagine_pil, prompt_ia])
-                st.session_state.testo_spia_generato = str(risposta.text).strip()
+                try:
+                    risposta = client.models.generate_content(model='gemini-3.5-flash-lite', contents=[immagine_pil, prompt_ia])
+                    st.session_state.testo_spia_generato = str(risposta.text).strip()
+                except Exception:
+                    try:
+                        risposta = client.models.generate_content(model='gemini-3.5-flash', contents=[immagine_pil, prompt_ia])
+                        st.session_state.testo_spia_generato = str(risposta.text).strip()
+                    except Exception:
+                        risposta = client.models.generate_content(model='gemini-3.6-flash', contents=[immagine_pil, prompt_ia])
+                        st.session_state.testo_spia_generato = str(risposta.text).strip()
 
                 if st.session_state.testo_spia_generato:
                     parti_estratte = st.session_state.testo_spia_generato.split(" - ")
@@ -277,54 +312,93 @@ with st.container(border=True):
                         for blocco_testo in parti_estratte:
                             stringa_pulita = str(blocco_testo).strip()
                             
-                            # Scrittura diretta nelle variabili stabili di sessione per eludere i reset di chiavi
+                            # 🎯 COORDINAMENTO DIRETTO CON I WIDGET DINAMICI DEL RESET
                             if posizione_indice == 0:
                                 st.session_state.val_num_ass = stringa_pulita
+                                # Iniettiamo il valore direttamente nella chiave del widget di testo per forzare lo schermo
+                                st.session_state[f"num_ass_widget_{st.session_state.contatore_grafico_reset}"] = stringa_pulita
+                            
                             elif posizione_indice == 1:
                                 try:
                                     stringa_no_migliaia = stringa_pulita.replace(".", "")
                                     stringa_decimale_corretta = stringa_no_migliaia.replace(",", ".")
                                     val_float = float(stringa_pulita.replace(",", "")) if "." in stringa_pulita and "," not in stringa_pulita else float(stringa_decimale_corretta)
+                                    
                                     st.session_state.val_imp_ass = val_float
+                                    # Iniettiamo il valore direttamente nella chiave del widget numerico per forzare lo schermo
+                                    st.session_state[f"imp_ass_widget_{st.session_state.contatore_grafico_reset}"] = val_float
                                 except: 
                                     st.session_state.val_imp_ass = 0.0
-                            elif Jazz == 2 or posizione_indice == 2:
+                                    st.session_state[f"imp_ass_widget_{st.session_state.contatore_grafico_reset}"] = 0.0
+                            
+                            elif posizione_indice == 2:
                                 try:
                                     formato_standard = stringa_pulita.replace("-", "/").replace(".", "/")
                                     val_date = datetime.strptime(formato_standard, "%d/%m/%Y").date()
                                     st.session_state.val_dat_ass = val_date
+                                    # Iniettiamo il valore direttamente nella chiave del widget data per forzare lo schermo
+                                    st.session_state[f"dat_ass_widget_{st.session_state.contatore_grafico_reset}"] = val_date
                                 except: pass
                             posizione_indice += 1
                     
+                    # 🎯 LA MODIFICA CHIRURGICA: Rimosso st.rerun() per bloccare il ciclo a vuoto della fotocamera!
                     st.session_state.ia_elaborata = True
                     st.toast("🎯 Campi compilati dall'IA!")
-                    st.rerun()
             except Exception as e_vision:
                 st.error(f"❌ Errore durante l'acquisizione rapida: {str(e_vision)}")
+
 
     if st.session_state.ia_elaborata:
         st.markdown("### 🔬 Dati Rilevati in tempo reale dall'IA di Google:")
         st.code(st.session_state.testo_spia_generato, language="text")
         st.warning("⚠️ **CONTROLLO OBBLIGATORIO:** Verifica l'esattezza del Numero, dell'Importo e della Data nelle caselle sottostanti prima di cliccare sul pulsante di invio blindato!")
 
+
+
+
+
 # =====================================================================================
-# 🧱 [BLOCCO 1 di 2]: CASELLE COMPILATE CON CHIAVI STATICHE (ANTI-CONGELAMENTO)
+# 🧱 [BLOCCO 1 di 2]: CASELLE COMPILATE E REGISTRAZIONE RECORD CONTABILE
 # =====================================================================================
+# Inizializzazione della variabile di memoria RAM per la Data Incasso se non esiste
 if "val_dat_inc" not in st.session_state: 
     st.session_state.val_dat_inc = datetime.now().date()
 
 st.markdown("---")
+# Allineamento a 4 colonne con le nuove etichette linguistiche richieste
 col_a, col_b, col_c, col_d = st.columns(4)
 
 with col_a:
-    numero_assegno_input = st.text_input("Numero Assegno:", value=st.session_state.get("val_num_ass", ""), key="num_ass_def_stable")
+    numero_assegno_input = st.text_input(
+        "Numero Assegno:", 
+        value=st.session_state.get("val_num_ass", ""), 
+        key=f"num_ass_widget_{st.session_state.contatore_grafico_reset}"
+    )
 with col_b:
-    importo_assegno = st.number_input("Importo Assegno (€):", min_value=0.0, value=st.session_state.get("val_imp_ass", 0.0), step=10.0, format="%.2f", key="imp_ass_def_stable")
+    importo_assegno = st.number_input(
+        "Importo Assegno (€):", 
+        min_value=0.0, 
+        value=st.session_state.get("val_imp_ass", 0.0), 
+        step=10.0, 
+        format="%.2f", 
+        key=f"imp_ass_widget_{st.session_state.contatore_grafico_reset}"
+    )
 with col_c:
-    data_assegno = st.date_input("Data:", value=st.session_state.get("val_dat_ass", datetime.now().date()), format="DD-MM-YYYY", key="dat_ass_def_stable")
+    # 🎯 AGGIORNAMENTO: Data Assegno diventa Data
+    data_assegno = st.date_input(
+        "Data:", 
+        value=st.session_state.get("val_dat_ass", datetime.now().date()), 
+        format="DD-MM-YYYY", 
+        key=f"dat_ass_widget_{st.session_state.contatore_grafico_reset}"
+    )
 with col_d:
-    data_incasso = st.date_input("Data Contabilità:", value=st.session_state.get("val_dat_inc", datetime.now().date()), format="DD-MM-YYYY", key="dat_inc_def_stable")
-
+    # 🎯 AGGIORNAMENTO: Data Incasso Effettivo diventa Data Contabilità
+    data_incasso = st.date_input(
+        "Data Contabilità:", 
+        value=st.session_state.get("val_dat_inc", datetime.now().date()), 
+        format="DD-MM-YYYY", 
+        key=f"dat_inc_widget_{st.session_state.contatore_grafico_reset}"
+    )
 
 
 
