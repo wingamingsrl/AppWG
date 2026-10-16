@@ -267,7 +267,7 @@ with st.container(border=True):
                 
                 prompt_ia = "Estrai dall'assegno solo il NUMERO dell'assegno, l'IMPORTO numerico contabile e la DATA di emissione. Rispondi scrivendo unicamente i tre valori puliti separati da un trattino con spazi prima e dopo, seguendo tassativamente questo esempio: 00904 - 1250.00 - 09/10/2026"
                 
-                risposta = client.models.generate_content(model='gemini-2.5-flash', contents=[immagine_pil, prompt_ia])
+                risposta = client.models.generate_content(model='gemini-3.5-flash', contents=[immagine_pil, prompt_ia])
                 st.session_state.testo_spia_generato = str(risposta.text).strip()
 
                 if st.session_state.testo_spia_generato:
