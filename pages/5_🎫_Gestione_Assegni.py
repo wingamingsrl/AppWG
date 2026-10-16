@@ -422,7 +422,7 @@ with col_btn1:
                     
                     # 🎯 COMPILAZIONE PERFETTA: La rotta esatta per salvare i dati nell'Excel degli Assegni
                     parte_api = "api.github.com"
-                    parte_repo = "repos/wingamingsrl/AppWGt"
+                    parte_repo = "repos/wingamingsrl/AppWG"
                     URL_API_GITHUB = f"https://{parte_api}/{parte_repo}/contents/registro_assegni.xlsx"
 
                     
@@ -627,6 +627,7 @@ try:
                             df_visualizza_completo.at[idx_cron, "STATO_VERSAMENTO"] = "Versato OK"
                             da_aggiornare_cloud = True
                     except: pass
+
 
 
 
