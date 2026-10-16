@@ -33,10 +33,20 @@ jobs:
           git add locali_non_incassati.xlsx
           # 🎯 BLINDATURA DI FORCE PUSH: Garantisce la sovrascrittura dell'Excel ad orario programmato
           git diff --quiet && git diff --staged --quiet || (git commit -m "⏱️ Sincro Automatica" && git push --force origin main)
-      - name: ✉️ Invio Report Mail Automatico ai Tecnici (Canale Cron)
+      - name: ✉️ Invio Report Mail Automatico ai Tecnici (Canale Cron Risanato)
         env:
           GITHUB_ACTIONS: "true"
-        run: python pages/4_📊_Report_Incassi.py
+          # Passiamo il token segreto del repository per sbloccare la lettura dei file
+          TOKEN_ACCESSO_GITHUB: ${{ secrets.TOKEN_ACCESSO_GITHUB }}
+        # 🎯 LA SVOLTA: Genera al volo la struttura dei segreti richiesta da Streamlit per evitare il crash
+        run: |
+          mkdir -p .streamlit
+          echo "[github]" > .streamlit/secrets.toml
+          echo "token_accesso_GITHUB=\"${{ secrets.TOKEN_ACCESSO_GITHUB }}\"" >> .streamlit/secrets.toml
+          echo "token_accesso=\"${{ secrets.TOKEN_ACCESSO_GITHUB }}\"" >> .streamlit/secrets.toml
+          
+          python pages/4_📊_Report_Incassi.py
+
       - name: 📦 Archivia Screenshot
         if: always()
         uses: actions/upload-artifact@v4
