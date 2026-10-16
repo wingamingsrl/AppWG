@@ -742,31 +742,50 @@ try:
 # =====================================================================================
             if ruolo_utente in ["ADMIN", "SUPERVISORE", "UFFICIO"] and not df_visualizza.empty:
                 st.markdown("---")
-                st.markdown("### 🛠️ Gestione Amministrativa e Correzione Assegni (Ufficio)")
+                st.markdown("### 🛠️ Gestione Amministrativa e Correzione Assegni (Ufficio)")         
                 
+                # 🎯 RECUPERO ELENCO TECNICI PER IL NUOVO MENU A TENDINA
+                lista_tecnici_dropdown = ["UFFICIO_CENTRALE"]
+                FILE_TECNICI = "elenco_tecnici.xlsx"
+                if os.path.exists(FILE_TECNICI):
+                    try:
+                        df_tec = pd.read_excel(FILE_TECNICI).fillna("")
+                        df_tec.columns = [str(c).strip().upper() for c in df_tec.columns]
+                        colonna_nome_tec = ""
+                        for c in df_tec.columns:
+                            if "NOME" in c or "TECNICO" in c:
+                                colonna_nome_tec = c
+                                break
+                        if not colonna_nome_tec and not df_tec.empty:
+                            colonna_nome_tec = df_tec.columns[0]
+                        if colonna_nome_tec:
+                            for _, r_t in df_tec.iterrows():
+                                t_nome = str(r_t[colonna_nome_tec]).strip().upper()
+                                if t_nome and t_nome not in lista_tecnici_dropdown:
+                                    lista_tecnici_dropdown.append(t_nome)
+                    except Exception:
+                        pass
+                if len(lista_tecnici_dropdown) <= 1:
+                    lista_tecnici_dropdown = ["UFFICIO_CENTRALE", "MANUELA", "ALESSANDRO", "TECNICO"]
+
                 opzioni_da_versare = []
                 opzioni_gia_versati = []
                 opzioni_globali_modifica = []
                 mappa_global_indici = {}
-                
                 for idx_m, r_m in df_visualizza_completo.iterrows():
                     testo_riga = f"ID {idx_m} | 👤 {r_m['ESATTORE']} | 📍 {r_m['LOCALE']} | Assegno: {r_m['NUMERO_ASSEGNO']} | {r_m['IMPORTO']:.2f} €"
                     mappa_global_indici[testo_riga] = idx_m
                     opzioni_globali_modifica.append(testo_riga)
-                    
                     if str(r_m["STATO_VERSAMENTO"]).strip() == "In Portafoglio":
                         opzioni_da_versare.append(testo_riga)
                     elif str(r_m["STATO_VERSAMENTO"]).strip() == "Versato OK":
                         opzioni_gia_versati.append(testo_riga)
-                
-                # 🔁 SOTTO-BLOCCO A: SEZIONE MODIFICA DATI CHIRURGICA
+
                 st.markdown("#### 📝 Modifica/Correzione Dati Assegno")
                 assegno_da_modificare = st.selectbox("Seleziona l'assegno da correggere:", options=["- Seleziona il titolo da modificare -"] + opzioni_globali_modifica, key="sb_mod_fields")
-                
                 if assegno_da_modificare != "- Seleziona il titolo da modificare -":
                     idx_target = mappa_global_indici[assegno_da_modificare]
                     riga_target = df_visualizza_completo.loc[idx_target]
-                    
                     # Caricamento delle date correnti salvate nel file con paracadute anti-crash
                     try: dt_ass_curr = datetime.strptime(str(riga_target["DATA_ASSEGNO"]).strip(), "%d/%m/%Y").date()
                     except: dt_ass_curr = datetime.now().date()
@@ -781,11 +800,18 @@ try:
                         imp_mod = st.number_input("Correggi Importo (€):", min_value=0.0, value=float(riga_target["IMPORTO"]), format="%.2f", key="edit_imp_key")
                     with col_m3:
                         dat_ass_mod = st.date_input("Correggi Data Emissione:", value=dt_ass_curr, format="DD-MM-YYYY", key="edit_dat_ass_key")
-                    with col_d:
+                    with col_m4:
                         dat_inc_mod = st.date_input("Correggi Data Contabilità:", value=dt_inc_curr, format="DD-MM-YYYY", key="edit_dat_inc_key")
                     
-                    # Menu a tendina per cambiare il locale al volo in caso di errore dell'esattore
-                    locale_mod = st.selectbox("Correggi Locale:", lista_locali, index=lista_locali.index(riga_target["LOCALE"]) if riga_target["LOCALE"] in lista_locali else 0, key="edit_loc_key")
+                    col_mod_combo1, col_mod_combo2 = st.columns(2)
+                    with col_mod_combo1:
+                        locale_mod = st.selectbox("Correggi Locale:", lista_locali, index=lista_locali.index(riga_target["LOCALE"]) if riga_target["LOCALE"] in lista_locali else 0, key="edit_loc_key")
+                    with col_mod_combo2:
+                        # 🎯 NUOVA COOPZIONE: Dropdown del tecnico agganciato ad elenco_tecnici
+                        esattore_corrente = str(riga_target["ESATTORE"]).strip().upper()
+                        if esattore_corrente not in lista_tecnici_dropdown:
+                            lista_tecnici_dropdown.append(esattore_corrente)
+                        tecnico_mod = st.selectbox("Correggi Tecnico (Esattore):", lista_tecnici_dropdown, index=lista_tecnici_dropdown.index(esattore_corrente), key="edit_tec_key")
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                     if st.button("💾 SALVA MODIFICHE E AGGIORNA CLOUD", key="btn_salva_modifica_admin", use_container_width=True):
@@ -793,6 +819,7 @@ try:
                         df_visualizza_completo.at[idx_target, "IMPORTO"] = float(imp_mod)
                         df_visualizza_completo.at[idx_target, "DATA_ASSEGNO"] = dat_ass_mod.strftime("%d/%m/%Y")
                         df_visualizza_completo.at[idx_target, "DATA_INCASSO"] = dat_inc_mod.strftime("%d/%m/%Y")
+                        df_visualizza_completo.at[idx_target, "ESATTORE"] = str(tecnico_mod).strip().upper()
                         if locale_mod != "- Selezionare il Locale -":
                             df_visualizza_completo.at[idx_target, "LOCALE"] = locale_mod
                             
@@ -803,10 +830,8 @@ try:
                         payload_adm = {"message": f"📝 Rettifica Amministrativa Assegno N. {num_mod}", "content": base64.b64encode(out_f.getvalue()).decode('utf-8'), "branch": "main", "sha": dati_j.get("sha", "")}
                         requests.put(URL_TABELLONE_API, json=payload_adm, headers=headers_git_tabella, timeout=15)
                         st.success("✅ Assegno rettificato con successo nel Cloud!"); time.sleep(1.2); st.rerun()
-                
                 st.markdown("---")
                 st.markdown("#### 🔀 Cambio Rapido Stati ed Eliminazione")
-                
                 assegni_scelti_da_versare = st.multiselect("Scegli uno o PIÙ assegni da marcare come VERSATI:", options=opzioni_da_versare, key="multi_v_m")
                 assegno_scelto_da_ripristinare = st.selectbox("Seleziona un titolo già versato da far tornare IN PORTAFOGLIO:", options=["- Seleziona -"] + opzioni_gia_versati, key="sb_r_p")
                 
