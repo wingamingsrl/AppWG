@@ -88,10 +88,15 @@ def esegui_controllo_notturno():
             
         payload_c = {"message": "🤖 [Controllo Notturno] Aggiornamento Stati Assegni", "content": base64.b64encode(out_c.getvalue()).decode('utf-8'), "branch": "main", "sha": dati_j.get("sha", "")}
         res_put = requests.put(URL_TABELLONE, json=payload_c, headers=headers, timeout=15)
+        
+        # 🎯 FILTRO RISANATO: Accetta i codici standard di successo 200 e 201 di GitHub
         if res_put.status_code in:
             print("💾 Registro aggiornato con successo su GitHub!")
+        else:
+            print(f"❌ Errore durante il salvataggio su GitHub: HTTP {res_put.status_code}")
     else:
         print("✨ Nessun assegno da modificare questa notte.")
+
 
 if __name__ == "__main__":
     esegui_controllo_notturno()
