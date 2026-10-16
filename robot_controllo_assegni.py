@@ -90,7 +90,7 @@ def esegui_controllo_notturno():
         res_put = requests.put(URL_TABELLONE, json=payload_c, headers=headers, timeout=15)
         
         # 🎯 SINTASSI CORRETTA (Sostituito il vecchio in:)
-        if res_put.status_code in:
+        if res_p_c.status_code == 200 or res_p_c.status_code == 201:
             print("💾 Registro aggiornato con successo su GitHub!")
         else:
             print(f"❌ Errore durante il salvataggio su GitHub: HTTP {res_put.status_code}")
